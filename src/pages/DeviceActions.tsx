@@ -1,9 +1,6 @@
-//import { PlayCircleFilled, ToolFilled } from "@ant-design/icons";
 import { DrawerForm, ProForm, ProFormDateRangePicker, ProFormSelect, ProFormText } from "@ant-design/pro-components";
 import { message } from "antd";
 import { useState } from "react";
-
-
 
 //type MenuItem = Required<MenuProps>['items'][number];
 
@@ -139,13 +136,10 @@ console.log('device_id ', device_id);
         />
         <div>
             <p>
-                hjkjj,mndvc xn,x,zxc nsjkdcm xnvmdsc vnmdvdnm dvnsm ncmdmx zccnmdfmc x
-                sdmnvhjsamnvjfkdscnm dhjvfndscm vcdkjsfcbdjfhvhu32iewhvbjkedvbjkrdsbvjk fv
+                qwerty
             </p>
         </div>
       </DrawerForm>
-    </>
-   
-      
+    </>   
   );
 }

@@ -1,11 +1,8 @@
 import { EditableProTable, type ProColumns } from "@ant-design/pro-components";
-//import type { DeviceTag } from "./DeviceList";
 import { Switch, Tag, Typography, type MenuTheme } from "antd";
 import { useState } from "react";
-//import type { DeviceTag } from "./DeviceList";
 import axios from "axios";
 
-//= DeviceTag &
 type DeviceTagEditable ={
     tag?:string;
     value?:string;
@@ -113,15 +110,14 @@ return (
         columns={columns}
         request={async (params, sorter, filter) => {
                         console.log(params, sorter, filter);    
-                        const {data} = await axios.get('http://localhost:8000/api/v1/devices/', 
-                            { headers: { 'org-id': '0' }, params: {'device_id': device_id} });                      
+                        const {data} = await axios.get('https://dev.leo4.ru/api/v1/devices/', 
+                            {withCredentials:true, params: {'device_id': device_id} });                      
                         const tagItems: DeviceTagEditable[] = data[0].device_tags.map(
                             (c: {id:number, created_at: string; tag: string; value: string; is_system_tag: boolean}) => {        
                             return {id:c.id, created_at:c.created_at, tag: c.tag, value:c.value, is_system_tag: c.is_system_tag }
                         });
                         return { data: tagItems, success:true}        
                     }}
-        // value={dataSource}
         options={{reload:true}}
         onChange={setDataSource}
         editable={{
@@ -129,7 +125,6 @@ return (
           editableKeys,
           onSave: async (rowKey, data, row) => {
             console.log(rowKey, data, row);
-           // await waitTime(2000);
           },
           onChange: setEditableRowKeys,
         }}

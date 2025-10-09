@@ -40,17 +40,12 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                 return (
 
                     <Space size={0} >
-                        {/* const clr: colorType = st==valueEnum[0]? "green" : "red" */}
                         <Tag color={item.status == valueEnum[0] ? "green" : "red"}
                             icon={item.status == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}>
                             <Badge style={{ width: '9ch', font: 'bold' }} status={item.status} text={item.device_id}
                             title="Состояние связи"
-
                             />
-                            {/* <span >, (Тип = {item.type})</span> */}
                         </Tag>
-
-                        {/* <Tag color="blue">{item.sn}</Tag> */}
                     </Space>
                 );
             },
@@ -62,24 +57,10 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
 
             render: (_, item) => {
                 return (
-
-                    // <Space size={0} >
-                    //     {/* const clr: colorType = st==valueEnum[0]? "green" : "red" */}
-                    //     <Tag color={item.status == valueEnum[0] ? "green" : "red"}
-                    //         icon={item.status == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}>
-                    //         <Badge style={{ width: '9ch', font: 'bold' }} status={item.status} text={item.device_id}
-                    //         title="Состояние связи"
-
-                    //         />
-                    //         {/* <span >, (Тип = {item.type})</span> */}
-                    //     </Tag>
-
                         <Tag color="blue">{item.sn}</Tag>
-                    // </Space>
                 );
             },
         },
-
         {
             title: 'Описание',
             key: 'name',
@@ -114,7 +95,8 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                 // -
                 console.log(params, sorter, filter);
 
-                const response = await axios.get('http://localhost:8000/api/v1/devices/', { headers: { 'org-id': '0' } })
+                const response = await axios.get('https://dev.leo4.ru/pages/api/v1/devices/', { withCredentials: true })
+                //{ headers: { 'org-id': '0' } }
                 //  { withCredentials: true }
                 const r = response.data
                 console.log(r)
@@ -135,11 +117,8 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
 
                     const st: statusType = c.connection.last_checked_result ? valueEnum[0] : valueEnum[1]
                     return { device_id: String(c.device_id), sn: c.sn, name: descr, status: st, cmds:cmds1, tags: c.device_tags }
-                })
-
-                 
+                })               
                 return { data: deviceItems, success:true }
-
             }}
             rowKey="device_id"
             toolbar={{
@@ -148,9 +127,7 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                         alert(value);
                     },
                 },
-
             }}
-          //  options={false}
             options={{reload:true}}
             pagination={{
                 pageSize: 8,
