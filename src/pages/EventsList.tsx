@@ -1,7 +1,7 @@
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import { Switch, Tag, type MenuTheme } from "antd";
-import axios from "axios";
 import {useState } from "react";
+import { axiosPrivate } from "../common/httpPrivate";
 
 type TableListEvent = {
     createdAtRange?: number[];
@@ -112,8 +112,8 @@ const EventList: React.FC<EventListProps> = (props) => {
             request={async (params, sorter, filter) => {
                 // -
                 console.log(params, sorter, filter);
-                const response = await axios.get('https://dev.leo4.ru/api/v1/device-events/',
-                    { withCredentials:true, params: {'events_exclude':44,'device_id': device_id, 'page': params.current, 'size':10} }
+                const response = await axiosPrivate.get('/api/v1/device-events/',
+                    { params: {'events_exclude':44,'device_id': device_id, 'page': params.current, 'size':10} }
                     //'size':params.pageSize
                 )
                 const r = response.data.items

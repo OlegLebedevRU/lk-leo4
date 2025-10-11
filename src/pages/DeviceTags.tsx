@@ -1,7 +1,7 @@
 import { EditableProTable, type ProColumns } from "@ant-design/pro-components";
 import { Switch, Tag, Typography, type MenuTheme } from "antd";
 import { useState } from "react";
-import axios from "axios";
+import { axiosPrivate } from "../common/httpPrivate";
 
 type DeviceTagEditable ={
     tag?:string;
@@ -110,8 +110,7 @@ return (
         columns={columns}
         request={async (params, sorter, filter) => {
                         console.log(params, sorter, filter);    
-                        const {data} = await axios.get('https://dev.leo4.ru/api/v1/devices/', 
-                            {withCredentials:true, params: {'device_id': device_id} });                      
+                        const {data} = await axiosPrivate.get('/api/v1/devices/', {params: {'device_id': device_id} });                      
                         const tagItems: DeviceTagEditable[] = data[0].device_tags.map(
                             (c: {id:number, created_at: string; tag: string; value: string; is_system_tag: boolean}) => {        
                             return {id:c.id, created_at:c.created_at, tag: c.tag, value:c.value, is_system_tag: c.is_system_tag }

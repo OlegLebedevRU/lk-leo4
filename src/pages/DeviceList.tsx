@@ -1,7 +1,8 @@
 import { CloseCircleOutlined, SyncOutlined } from '@ant-design/icons';
 import { ProTable, type ProColumns } from '@ant-design/pro-components';
 import { Badge, Space, Tag, type BadgeProps } from 'antd';
-import axios from 'axios';
+import { axiosPrivate } from '../common/httpPrivate';
+
 
 type statusType = BadgeProps['status'];
 
@@ -95,9 +96,7 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                 // -
                 console.log(params, sorter, filter);
 
-                const response = await axios.get('https://dev.leo4.ru/pages/api/v1/devices/', { withCredentials: true })
-                //{ headers: { 'org-id': '0' } }
-                //  { withCredentials: true }
+                const response = await axiosPrivate.get('/api/v1/devices/');
                 const r = response.data
                 console.log(r)
                 const deviceItems: DeviceListItem[] = 

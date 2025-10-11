@@ -1,7 +1,7 @@
 import { ProTable, type ProColumns } from '@ant-design/pro-components';
 import { Tag } from "antd";
-import axios from "axios";
 import NewTask from './CreateNewTask';
+import { axiosPrivate } from '../common/httpPrivate';
 
 type TableListTask = {
     createdAtRange?: number[];
@@ -110,8 +110,8 @@ const DetailList: React.FC<DetailListProps> = (props) => {
             request={async (params, sorter, filter) => {
                 // -
                 console.log(params, sorter, filter);
-                const response = await axios.get('https://dev.leo4.ru/api/v1/device-tasks/',
-                    { withCredentials:true, params: { 'device_id': device_id, 'page': params.current, 'size':10} }
+                const response = await axiosPrivate.get('/api/v1/device-tasks/',
+                    {params: { 'device_id': device_id, 'page': params.current, 'size':10} }
                     //'size':params.pageSize
                 )
                 const r = response.data.items

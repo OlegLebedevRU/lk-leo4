@@ -4,9 +4,9 @@ import { LoginForm, ProConfigProvider, ProFormCheckbox, ProFormText } from "@ant
 import { theme, Space, ConfigProvider} from "antd";
 import {Buffer} from 'buffer';
 import ruRU from 'antd/locale/ru_RU';
-import axios from 'axios';
 import React from 'react';
 import { Navigate } from 'react-router';
+import { axiosPublic } from '../common/httpPublic';
 
 const Login: React.FC = () => {
     const { token } = theme.useToken();
@@ -30,8 +30,7 @@ const Login: React.FC = () => {
             const { username, password } = values;
             const encodedToken = Buffer.from(`${username}:${password}`).toString('base64');
             console.log(values, encodedToken);
-            const response = await axios.get('https://dev.leo4.ru/account/login/', { headers: { 
-               'Content-Type': 'application/json','Authorization': 'Basic '+ encodedToken} })
+            const response = await axiosPublic.get('/login/', { headers: { 'Authorization': 'Basic '+ encodedToken} })
             console.log(response.data);
             authOn();
           }}
