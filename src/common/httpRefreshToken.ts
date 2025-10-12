@@ -3,7 +3,7 @@ import mem from "memoize";
 
 const refreshTokenFn = async () =>{
 //   const session = JSON.parse(localStorage.getItem("session"));
-
+    console.log("try refreshToken");
   try {
     await axios.get("https://dev.leo4.ru/private/refresh/", {
         withCredentials:true, headers: {
@@ -11,11 +11,11 @@ const refreshTokenFn = async () =>{
      },} );
 
     // const { session } = response.data;
-    console.log("try refreshToken")
+    
     return true;
   } catch (error) {
 //
-    console.log("error refreshToken", error)
+    console.log("error refreshToken", error);
     return false;
   }
 };

@@ -77,7 +77,7 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
             valueType:"option",
             render: (_text, record, _, action) => [
                 <a
-                //key="editable"
+                key="editable"
                 onClick={() => {
                     action?.reload();
                 }}
