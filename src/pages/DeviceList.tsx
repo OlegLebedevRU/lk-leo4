@@ -129,7 +129,7 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
             }}
             options={{reload:true}}
             pagination={{
-                pageSize: 8,
+                pageSize: 20,
                 showSizeChanger: false,
             }}
             search={false}
