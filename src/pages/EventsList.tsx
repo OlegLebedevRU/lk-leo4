@@ -138,7 +138,7 @@ const EventList: React.FC<EventListProps> = (props) => {
                 showLessItems: false,
                 showTitle: false,
             }}
-            rowKey="dev_event_id"
+            rowKey="createdAt"
             search={false}
         />);
 }

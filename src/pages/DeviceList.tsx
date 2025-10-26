@@ -11,6 +11,11 @@ export type DeviceTag = {
     tag:string;
     value: string;
 }
+type DeviceGauges = {
+    type?:string;
+    updated_at:number;
+    gauges?:unknown;
+};
 export type DeviceListItem = {
     device_id?: string;
     // tasks?: number | string;
@@ -19,6 +24,9 @@ export type DeviceListItem = {
     status: statusType;
     tags?: DeviceTag[];
     cmds?: string;
+    active_ws?: statusType;
+    sip?:string;
+    ipc?:string;
 };
 
 
@@ -33,7 +41,7 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
 
     const columns: ProColumns<DeviceListItem>[] = [
         {
-            title: 'Номер',
+            title: '№ (Связь)',
             key: 'device_id',
             dataIndex: 'device_id',
 
@@ -41,15 +49,37 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                 return (
 
                     <Space size={0} >
-                        <Tag color={item.status == valueEnum[0] ? "green" : "red"}
-                            icon={item.status == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}>
-                            <Badge style={{ width: '9ch', font: 'bold' }} status={item.status} text={item.device_id}
+                        
+                        <Tag color={item.status == valueEnum[0] ? "green" : "red"}  
+                            // icon={item.status == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}
+                            >
+                            <Badge style={{ width: '8ch', font: 'bold' }} status={item.status} text={item.device_id}
                             title="Состояние связи"
                             />
                         </Tag>
                     </Space>
                 );
             },
+        },
+        {
+            title: 'WS Gate',
+            key:'active_ws',
+            dataIndex:'active_ws',
+            render: (_, item) => {
+                            return (
+
+                                <Space size={0} >
+                                    <Tag color={item.active_ws ==valueEnum[0] ? "green" : "white"}
+                                        icon={item.active_ws == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}
+                                        >
+                                        <Badge style={{ width: '2ch', font: 'bold' }} status={item.active_ws} 
+                                        title="Состояние сокета"
+                                        />
+                                    </Tag>
+                                </Space>
+                            );
+                        },
+
         },
  {
             title: 'Серийный номер',
@@ -100,22 +130,33 @@ const Devicelist: React.FC<DeviceListProps> = (props) => {
                 const r = response.data
                 console.log(r)
                 const deviceItems: DeviceListItem[] = 
-                r.map((c: { connection: { last_checked_result: boolean; }; device_id: number; sn: string; device_tags: DeviceTag[] }) => {
-                 let descr: string = "";
-                 let cmds1: string = "";
+                r.map((c: { connection: { last_checked_result: boolean; }; 
+                    device_id: number; sn: string; device_tags: DeviceTag[]; device_gauges: DeviceGauges[] }) => {
+                    let descr: string = "";
+                    let cmds1: string = "";
                     c.device_tags.forEach((val, index) => {  
                     if (val)
-                        if(val.tag=="1001" || val.tag=="name" || val.tag=="description") {
+                        if(val.tag=="name" || val.tag=="description") {
                             descr = descr.concat(" ", val.value);
                            console.log(`Element: ${val.value}, Index: ${index}`);   
-                        } else if(val.tag=="2001"){
+                        } else if(val.tag=="cmd"){
                             cmds1 = cmds1.concat(" ", val.value);
                         }
                       
                      });
-
+                     let wsc: statusType = valueEnum[1];
+                    c.device_gauges.forEach((gauge, index)=> {
+                        if (gauge)
+                            if (gauge.type =="44") {
+                                const o1 = gauge["gauges"];
+                                console.log(o1["300"][0]["338"],"Time: ", Math.floor((new Date().getTime()- new Date(gauge.updated_at).getTime())/1000) );
+                            if (o1["300"][0]["338"] === undefined || o1["300"][0]["338"]==0 || Math.floor((new Date().getTime()- new Date(gauge.updated_at).getTime())/1000) >700){
+                                wsc = valueEnum[1];
+                            } else wsc =valueEnum[0];
+                            }
+                    });
                     const st: statusType = c.connection.last_checked_result ? valueEnum[0] : valueEnum[1]
-                    return { device_id: String(c.device_id), sn: c.sn, name: descr, status: st, cmds:cmds1, tags: c.device_tags }
+                    return { device_id: String(c.device_id), sn: c.sn, name: descr, status: st, cmds:cmds1, tags: c.device_tags, active_ws: wsc }
                 })               
                 return { data: deviceItems, success:true }
             }}
