@@ -123,7 +123,9 @@ return (
           type: 'multiple',
           editableKeys,
           onSave: async (rowKey, data, row) => {
-            console.log(rowKey, data, row);
+            
+            const resp = await axiosPrivate.put('/api/v1/devices/'+String(device_id), {'tag':data.tag, 'value':data.value});
+            console.log(rowKey, data, row, resp);
           },
           onChange: setEditableRowKeys,
         }}
