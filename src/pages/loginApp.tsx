@@ -1,48 +1,57 @@
-import '@ant-design/v5-patch-for-react-19';
+// import '@ant-design/v5-patch-for-react-19';
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { LoginForm, ProConfigProvider, ProFormCheckbox, ProFormText } from "@ant-design/pro-components";
-import { theme, Space, ConfigProvider} from "antd";
-import {Buffer} from 'buffer';
+import { theme, Space, ConfigProvider } from "antd";
 import ruRU from 'antd/locale/ru_RU';
 import React from 'react';
 import { Navigate } from 'react-router';
 import { axiosPublic } from '../common/httpPublic';
 
 const Login: React.FC = () => {
-    const { token } = theme.useToken();
-    const [isAuthenticated, setIsAuthenticated] = React.useState(false);
-    const authOn = () => setIsAuthenticated(true);
-    if (isAuthenticated) return (<>{ <Navigate replace to="/" />}</>);
+  const { token } = theme.useToken();
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const authOn = () => setIsAuthenticated(true);
 
-    return (
-        <ConfigProvider
-            //   locale={loc_en},
-            theme={{algorithm: theme.defaultAlgorithm,}}
-             locale={ruRU}>
-    <ProConfigProvider hashed={false} >
-      <div style={{ backgroundColor: token.colorBgBase}}>
-        <LoginForm
-          logo="../../public/favicon.svg"
-        //   title="Leo4"
-          subTitle="Leo4 Control center"
-          actions={ <Space></Space> }
-          onFinish={ async (values ) => {
-            const { username, password } = values;
-            const encodedToken = Buffer.from(`${username}:${password}`).toString('base64');
-            console.log(values, encodedToken);
-            const response = await axiosPublic.get('/login/', { headers: { 'Authorization': 'Basic '+ encodedToken} })
-            console.log(response.data);
-            authOn();
-          }}
-        >
+  if (isAuthenticated) return <Navigate replace to="/" />;
+
+  return (
+    <ConfigProvider locale={ruRU} theme={{ algorithm: theme.defaultAlgorithm }}>
+      <ProConfigProvider hashed={false}>
+        <div style={{ backgroundColor: token.colorBgBase }}>
+          <LoginForm
+            logo="../../public/favicon.svg"
+            subTitle="Leo4 Control center"
+            actions={<Space />}
+            onFinish={async (values) => {
+              const { username, password } = values;
+              
+              // ✅ Замена Buffer на btoa для Base64-кодирования
+              const encodedCredentials = btoa(`${username}:${password}`);
+              
+              console.log(values, encodedCredentials);
+              
+              try {
+                const response = await axiosPublic.get('/login/', {
+                  headers: {
+                    Authorization: `Basic ${encodedCredentials}`,
+                  },
+                });
+                console.log(response.data);
+                authOn(); // Авторизация успешна
+              } catch (error) {
+                console.error('Login failed:', error);
+                // Можно добавить отображение ошибки пользователю
+              }
+            }}
+          >
             <>
               <ProFormText
                 name="username"
                 fieldProps={{
                   size: 'large',
-                  prefix: <UserOutlined className={'prefixIcon'} />,
+                  prefix: <UserOutlined className="prefixIcon" />,
                 }}
-                placeholder={'Имя пользователя'}
+                placeholder="Имя пользователя"
                 rules={[
                   {
                     required: true,
@@ -54,17 +63,13 @@ const Login: React.FC = () => {
                 name="password"
                 fieldProps={{
                   size: 'large',
-                  prefix: <LockOutlined className={'prefixIcon'} />,
+                  prefix: <LockOutlined className="prefixIcon" />,
                   strengthText:
-                    'Password should contain numbers, letters and special characters, at least 8 characters long.',
+                    'Пароль должен содержать цифры, буквы и спецсимволы, не менее 8 символов.',
                   statusRender: (value) => {
                     const getStatus = () => {
-                      if (value && value.length > 12) {
-                        return 'ok';
-                      }
-                      if (value && value.length > 6) {
-                        return 'pass';
-                      }
+                      if (value && value.length > 12) return 'ok';
+                      if (value && value.length > 6) return 'pass';
                       return 'poor';
                     };
                     const status = getStatus();
@@ -83,88 +88,38 @@ const Login: React.FC = () => {
                       );
                     }
                     return (
-                      <div style={{ color: token.colorError }}>Качество：Слабое</div>
+                      <div style={{ color: token.colorError }}>
+                        Качество：Слабое
+                      </div>
                     );
                   },
                 }}
-                placeholder={'Пароль'}
+                placeholder="Пароль"
                 rules={[
                   {
                     required: true,
-                    message: 'Password required!',
+                    message: 'Пароль обязателен!',
                   },
                 ]}
               />
             </>
-           {/* )} */}
-          {/* {loginType === 'phone' && (
-            <>
-              <ProFormText
-                fieldProps={{
-                  size: 'large',
-                  prefix: <MobileOutlined className={'prefixIcon'} />,
+            <div style={{ marginBlockEnd: 24 }}>
+              <ProFormCheckbox noStyle name="autoLogin">
+                Принять условия
+              </ProFormCheckbox>
+              <a
+                style={{
+                  float: 'right',
                 }}
-                name="mobile"
-                placeholder={'手机号'}
-                rules={[
-                  {
-                    required: true,
-                    message: '请输入手机号！',
-                  },
-                  {
-                    pattern: /^1\d{10}$/,
-                    message: '手机号格式错误！',
-                  },
-                ]}
-              />
-              <ProFormCaptcha
-                fieldProps={{
-                  size: 'large',
-                  prefix: <LockOutlined className={'prefixIcon'} />,
-                }}
-                captchaProps={{
-                  size: 'large',
-                }}
-                placeholder={'请输入验证码'}
-                captchaTextRender={(timing, count) => {
-                  if (timing) {
-                    return `${count} ${'获取验证码'}`;
-                  }
-                  return '获取验证码';
-                }}
-                name="captcha"
-                rules={[
-                  {
-                    required: true,
-                    message: '请输入验证码！',
-                  },
-                ]}
-                onGetCaptcha={async () => {
-                  message.success('获取验证码成功！验证码为：1234');
-                }}
-              />
-            </>
-          )} */}
-          <div
-            style={{
-              marginBlockEnd: 24,
-            }}
-          >
-            <ProFormCheckbox noStyle name="autoLogin">
-              Принять условия
-            </ProFormCheckbox>
-            <a
-              style={{
-                float: 'right',
-              }}
-            >
-              Оферта
-            </a>
-          </div>
-        </LoginForm>
-      </div>
-    </ProConfigProvider>
+              >
+                Оферта
+              </a>
+            </div>
+          </LoginForm>
+        </div>
+      </ProConfigProvider>
     </ConfigProvider>
-  );   
-}
-export default Login
+  );
+};
+
+export default Login;

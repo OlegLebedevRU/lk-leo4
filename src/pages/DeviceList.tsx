@@ -73,7 +73,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
     <div style={{ padding: '16px' }}>
       <div style={{ marginBottom: '16px', padding: '12px', border: '1px solid #d9d9d9', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
         <h3>Настройка доступа</h3>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Input.Password
             placeholder="Введите X-Api-Key"
             value={apiKey}

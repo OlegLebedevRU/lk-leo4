@@ -1,4 +1,4 @@
-import '@ant-design/v5-patch-for-react-19';
+//import '@ant-design/v5-patch-for-react-19';
 import { ProCard, ProDescriptions } from '@ant-design/pro-components';
 import { ConfigProvider, Tabs, theme } from 'antd';
 import type { TabsProps } from 'antd';
