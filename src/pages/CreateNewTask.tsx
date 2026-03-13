@@ -1,9 +1,13 @@
-import { DownloadOutlined, PlusOutlined, PoweroffOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
-import { ModalForm, ProCard, ProDescriptions, ProForm, ProFormDigit, ProFormField, ProFormSelect, ProFormText, ProFormTextArea } from "@ant-design/pro-components";
-import { Button, Divider, Form, message, Space, Typography } from "antd";
+import { DownloadOutlined, PlusOutlined, SendOutlined, SyncOutlined } from "@ant-design/icons";
+import { ModalForm, ProCard, ProDescriptions, ProForm, ProFormDigit, ProFormField, ProFormText, ProFormTextArea } from "@ant-design/pro-components";
+import { Button, Divider, Form, message, Space } from "antd";
 import { useState } from "react";
 import { axiosPrivate } from "../common/httpPrivate";
 //import Title from "antd/es/skeleton/Title";
+
+type DeviceTaskPayload = Record<string, unknown> & {
+  dt: Array<Record<string, unknown>>;
+};
 
 type NewDeviceTask = {
   ext_task_id: string;
@@ -12,12 +16,71 @@ type NewDeviceTask = {
   priority: number;
   ttl: number;
  
-  payload?:string;
+  payload?: DeviceTaskPayload;
+};
+
+type NewDeviceTaskFormValues = Omit<NewDeviceTask, "payload"> & {
+  payload?: string;
 };
 
 type DetailListProps = {
   device_id: string;
 };
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parsePayload(payloadText: string | undefined): DeviceTaskPayload | undefined {
+  const raw = payloadText?.trim();
+  if (!raw) return undefined;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("payload должен быть валидным JSON");
+  }
+
+  if (!isRecord(parsed)) {
+    throw new Error("payload должен быть объектом");
+  }
+
+  const dt = parsed["dt"];
+  if (!Array.isArray(dt)) {
+    throw new Error('payload должен содержать массив объектов в поле "dt"');
+  }
+  if (!dt.every(isRecord)) {
+    throw new Error('payload.dt должен быть массивом объектов');
+  }
+
+  return parsed as DeviceTaskPayload;
+}
+
+function toNewDeviceTaskRequest(values: NewDeviceTaskFormValues): NewDeviceTask {
+  const { payload: payloadText, ...rest } = values;
+  const payload = parsePayload(payloadText);
+  return {
+    ...rest,
+    ...(payload ? { payload } : {}),
+  };
+}
+
+function buildPacketPreview(values: NewDeviceTaskFormValues): string {
+  try {
+    return JSON.stringify(toNewDeviceTaskRequest(values), null, 2);
+  } catch (e) {
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    return JSON.stringify(
+      {
+        ...values,
+        payload_error: errorMessage,
+      },
+      null,
+      2
+    );
+  }
+}
 function rstr()  {
     let outString: string = '';
     const inOptions: string = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -28,13 +91,11 @@ function rstr()  {
   };
 const NewTask: React.FC<DetailListProps> = (props) => {
   const { device_id } = props;
-  const deftask = '{\n"ext_task_id": "s7vlchhitr0qr1hxoywq",\n\
-"device_id": 4618,\n"method_code": 20,\n"priority": 1,\n"ttl": 1,\n"payload": "{"dt": [ {"mt": 0 } ]}"\n}';
-  const [form] = Form.useForm<NewDeviceTask>();
+  const [form] = Form.useForm<NewDeviceTaskFormValues>();
   const [packet, setPacket] = useState<string>('');
   const [loadings, setLoadings] = useState<boolean[]>([]);
-  const [task_resp, setTaskResp] = useState();
-   const [task_result, setTaskResult] = useState();
+  const [task_resp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
+  const [task_result, setTaskResult] = useState<unknown>(undefined);
   const enterLoading = (index: number) => {
     console.log('Start loading:', index);
 
@@ -54,7 +115,7 @@ const NewTask: React.FC<DetailListProps> = (props) => {
   };
   
   return (
-    <ModalForm<NewDeviceTask>
+    <ModalForm<NewDeviceTaskFormValues>
       
       width="90%"
       
@@ -73,7 +134,7 @@ const NewTask: React.FC<DetailListProps> = (props) => {
       //  formRef={ref}
       onOpenChange={(open) => {
       if(open) {form.setFieldValue('ext_task_id', rstr());
-        setPacket(JSON.stringify(form.getFieldsValue(),null,2));
+        setPacket(buildPacketPreview(form.getFieldsValue()));
         setTaskResp(undefined);
         setTaskResult(undefined);
          console.log(form.getFieldsValue());}
@@ -81,7 +142,7 @@ const NewTask: React.FC<DetailListProps> = (props) => {
       }}
       onChange={ () => {
        
-        setPacket(JSON.stringify(form.getFieldsValue(),null,2));
+        setPacket(buildPacketPreview(form.getFieldsValue()));
          console.log(form.getFieldsValue());
         return true;
       }}
@@ -174,6 +235,14 @@ const NewTask: React.FC<DetailListProps> = (props) => {
         initialValue='{"dt": [ {"mt": 0 } ]}'
         valueType="code"
         fieldProps={{ style: { height:120, fontSize: 14, color: '#dae7f0ff', backgroundColor: "#0f0e0eff" } }}
+        rules={[
+          {
+            validator: async (_rule: unknown, value: string | undefined) => {
+              if (!value?.trim()) return;
+              parsePayload(value);
+            },
+          },
+        ]}
       />
       {/* <ProFormText
                           width="xs"
@@ -207,10 +276,18 @@ const NewTask: React.FC<DetailListProps> = (props) => {
           icon={<SendOutlined />}
           loading={loadings[3] && { icon: <SyncOutlined spin /> }}
           onClick={async () => {
-            const resp = await axiosPrivate.post('/api/v1/device-tasks/', form.getFieldsValue());
-            setTaskResp(resp.data);
-            console.log(resp.data);
-            if(resp.status == 200){return;};
+            try {
+              enterLoading(3);
+              await form.validateFields();
+              const task = toNewDeviceTaskRequest(form.getFieldsValue());
+              const resp = await axiosPrivate.post('/api/v1/device-tasks/', task);
+              setTaskResp(resp.data);
+              console.log(resp.data);
+              if(resp.status == 200){return;};
+            } catch (e) {
+              const msg = e instanceof Error ? e.message : "Не удалось отправить задачу";
+              message.error(msg);
+            }
           }}
         >Send task</Button>
 
@@ -219,7 +296,11 @@ const NewTask: React.FC<DetailListProps> = (props) => {
           icon={<DownloadOutlined />}
           // loading={loadings[3] && { icon: <SyncOutlined spin /> }}
           onClick={async () => {
-            const resp = await axiosPrivate.get('/api/v1/device-tasks/'+String(task_resp['id']));
+            if (!task_resp?.id) {
+              message.warning("Сначала отправьте задачу (нет id)");
+              return;
+            }
+            const resp = await axiosPrivate.get('/api/v1/device-tasks/'+String(task_resp.id));
             setTaskResult(resp.data);
             console.log(resp.data);
             if(resp.status == 200){return;};

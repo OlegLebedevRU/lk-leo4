@@ -1,134 +1,137 @@
-import { CloseCircleOutlined, SyncOutlined } from '@ant-design/icons';
+// src/pages/DeviceList.tsx
 import { ProTable, type ProColumns } from '@ant-design/pro-components';
-import { Badge, Space, Tag } from 'antd';
+import { Badge, Button, Input, Space, Tag, Alert } from 'antd';
+import { useState } from 'react';
 import { fetchDevices } from '../features/devices/api/devices';
 import { mapDevicesToListItems } from '../features/devices/domain/deviceMapping';
 import { STATUS_ENUM, type DeviceListItem } from '../features/devices/types';
-
+import { setApiKey, getApiKey } from '../common/httpPrivate';
 
 type DeviceListProps = {
-    device_id: string;
-    onChange: (id: string, cmd?:string) => void;
-   // success:boolean;
+  device_id: string;
+  onChange: (id: string, cmd?: string) => void;
 };
 
-const Devicelist: React.FC<DeviceListProps> = (props) => {
-    const { onChange } = props;
-    const valueEnum = STATUS_ENUM;
+const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
+  const valueEnum = STATUS_ENUM;
 
-    const columns: ProColumns<DeviceListItem>[] = [
-        {
-            title: '№ (Связь)',
-            key: 'device_id',
-            dataIndex: 'device_id',
+  // ✅ Ленивая инициализация — нет нужды в useEffect!
+  const [apiKey, setLocalKey] = useState<string>(() => getApiKey());
+  const [error, setError] = useState<string | null>(null);
 
-            render: (_, item) => {
-                return (
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalKey(e.target.value);
+  };
 
-                    <Space  >
-                        
-                        <Tag color={item.status == valueEnum[0] ? "green" : "red"}  
-                            // icon={item.status == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}
-                            >
-                            <Badge style={{ width: '8ch', font: 'bold' }} status={item.status} text={item.device_id}
-                            title="Состояние связи" 
-                            />
-                        </Tag>
-                    </Space>
-                );
-            },
-        },
-        {
-            title: 'WS Gate',
-            key:'active_ws',
-            dataIndex:'active_ws',
-            render: (_, item) => {
-                            return (
+  const saveApiKey = () => {
+    if (!apiKey.trim()) {
+      setError("API-ключ не может быть пустым");
+      return;
+    }
+    setError(null);
+    setApiKey(apiKey); // Сохраняем в localStorage
+    window.location.reload(); // Чтобы новые запросы пошли с ключом
+  };
+  const columns: ProColumns<DeviceListItem>[] = [
+    {
+      title: '№ (Связь)',
+      key: 'device_id',
+      dataIndex: 'device_id',
+      width: '25%',
+      render: (_, item) => (
+        <Space>
+          <Tag color={item.status === valueEnum[0] ? 'green' : 'red'}>
+            <Badge
+              style={{ width: '8ch', fontWeight: 'bold' }}
+              status={item.status}
+              text={item.device_id}
+              title="Состояние связи"
+            />
+          </Tag>
+        </Space>
+      ),
+    },
+    {
+      title: 'Серийный номер',
+      key: 'sn',
+      dataIndex: 'sn',
+      width: '35%',
+      render: (_, item) => (
+        <Tag color="blue">{item.sn}</Tag>
+      ),
+    },
+    {
+      title: 'Описание',
+      key: 'name',
+      dataIndex: 'name',
+      width: '40%',
+      ellipsis: true,
+    },
+  ];
 
-                                <Space  >
-                                    <Tag color={item.active_ws ==valueEnum[0] ? "rgba(12, 133, 93, 1)" : "rgba(223, 220, 220, 1)"}
-                                        icon={item.active_ws == valueEnum[0] ? <SyncOutlined spin /> : <CloseCircleOutlined />}
-                                        >
-                                        <Badge style={{ width: '2ch', font: 'bold' }} status={item.active_ws} 
-                                        title="Состояние сокета"
-                                        />
-                                    </Tag>
-                                </Space>
-                            );
-                        },
+ return (
+    <div style={{ padding: '16px' }}>
+      <div style={{ marginBottom: '16px', padding: '12px', border: '1px solid #d9d9d9', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
+        <h3>Настройка доступа</h3>
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Input.Password
+            placeholder="Введите X-Api-Key"
+            value={apiKey}
+            onChange={handleApiKeyChange}
+            size="large"
+          />
+          {error && <Alert message={error} type="error" showIcon />}
+          <Button type="primary" onClick={saveApiKey}>
+            Сохранить ключ
+          </Button>
+        </Space>
+        <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+          Ключ сохраняется в браузере. Используется для всех запросов.
+        </div>
+      </div>
 
-        },
- {
-            title: 'Серийный номер',
-            key: 'sn',
-            dataIndex: 'sn',
+      <ProTable<DeviceListItem>
+        headerTitle="Список устройств"
+        columns={columns}
+        request={async () => {
+          try {
+            const devices = await fetchDevices();
+            const deviceItems: DeviceListItem[] = mapDevicesToListItems(devices);
+            return { data: deviceItems, success: true };
+          } catch (error: unknown) {
+                let message = 'Ошибка загрузки устройств';
 
-            render: (_, item) => {
-                return (
-                        <Tag color="blue">{item.sn}</Tag>
-                );
-            },
-        },
-        {
-            title: 'Описание',
-            key: 'name',
-            width: '50%',
-            dataIndex: 'name',
+                if (error && typeof error === 'object' && 'response' in error) {
+                    const axiosError = error as { response?: { data?: { message?: string } } };
+                    message = axiosError.response?.data?.message || message;
+                } else if (error instanceof Error) {
+                    message = error.message;
+                }
 
-        },
-        {
-            title: 'Быстрый доступ',
-            key: 'cmds',
-            width: '25%',
-            dataIndex: 'cmds',
-            valueType:"option",
-            render: (_text, record, _, action) => [
-                <a
-                key="editable"
-                onClick={() => {
-                    action?.reload();
-                }}
-                >
-                {record.cmds}
-                </a>,]
-
-        },
-
-    ];
-    return (
-        <ProTable<DeviceListItem>
-            headerTitle="Список устройств"
-            columns={columns}
-            request={async () => {
-                const devices = await fetchDevices();
-                const deviceItems: DeviceListItem[] = mapDevicesToListItems(devices);
-                return { data: deviceItems, success:true }
-            }}
-            rowKey="device_id"
-            toolbar={{
-                search: {
-                    onSearch: (value) => {
-                        alert(value);
-                    },
-                },
-            }}
-            options={{reload:true}}
-            pagination={{
-                pageSize: 20,
-                showSizeChanger: false,
-            }}
-            search={false}
-            onRow={(record) => {
                 return {
-                    onClick: () => {
-                        if (record.device_id) {
-                            onChange(record.device_id, record.cmds);
-                        }
-                    },
+                    data: [],
+                    success: false,
+                    errorMessage: message,
                 };
-            }}
-        />
-    );
+                }
+        }}
+        rowKey="device_id"
+        search={false}
+        pagination={{
+          pageSize: 20,
+          showSizeChanger: false,
+        }}
+        options={{ reload: true }}
+        onRow={(record) => ({
+          onClick: () => {
+            if (record.device_id) {
+              onChange(record.device_id, record.cmds);
+            }
+          },
+        })}
+      />
+    </div>
+  );
 };
 
-export default Devicelist
+export default DeviceList;

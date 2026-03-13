@@ -22,7 +22,7 @@ type DeviceInfo = DeviceApiResponse[];
 
 const TAB_ITEMS: TabsProps['items'] = [
     { label: 'Контекст', key: 'context' },
-    { label: 'Очередь заданий', key: 'tasks' },
+    { label: 'Команды/задачи', key: 'tasks' },
     { label: 'Журнал событий', key: 'events' },
     { label: 'Теги', key: 'tags' },
 ];
