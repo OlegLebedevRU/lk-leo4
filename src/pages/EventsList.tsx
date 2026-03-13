@@ -1,6 +1,6 @@
 // src/pages/EventsList.tsx
 import { ProTable, type ProColumns } from "@ant-design/pro-components";
-import { Switch, Tag } from "antd";
+import { Switch, Tag, Typography } from "antd"; // ← добавлен Typography
 import { useState } from "react";
 import { axiosPrivate } from "../common/httpPrivate";
 
@@ -28,7 +28,7 @@ type TableListEvent = {
   createdAt: string;
   event_code: number;
   dev_event_id: number;
-  code: JsonObject; // ← payload как объект
+  code: JsonObject;
   description?: string;
 };
 
@@ -41,11 +41,9 @@ const getEventDescription = (item: TableListEvent): string => {
   const { event_code, code: payload } = item;
 
   if (!payload || typeof payload !== "object") {
-    return "-";
+    return "—";
   }
 
-  // Старт устройства: event_code не используется, но в payload["200"] === 0?
-  // В примере: "200": 44 → не старт. Старт, если 200 === 0
   if (typeof payload["200"] === "number" && payload["200"] === 0) {
     return "Старт устройства";
   }
@@ -66,7 +64,7 @@ const getEventDescription = (item: TableListEvent): string => {
           }
         }
       }
-      return "-";
+      return "—";
     }
     case 14:
     case 13: {
@@ -81,17 +79,17 @@ const getEventDescription = (item: TableListEvent): string => {
           const hasPort = typeof port === "number";
 
           if (!hasBoard && !hasPort) {
-            return "-";
+            return "—";
           }
 
           const action = event_code === 14 ? "Закрыли" : "Открыли";
           return `${action} замок, плата = ${hasBoard ? board : "?"}, порт = ${hasPort ? port : "?"}`;
         }
       }
-      return "-";
+      return "—";
     }
     default:
-      return "-";
+      return `Код ${event_code}`;
   }
 };
 
@@ -121,7 +119,7 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       valueType: "text",
       width: "30%",
       renderText: (value: string) => {
-        if (!value) return "";
+        if (!value) return "—";
 
         const date = new Date(value);
         if (isNaN(date.getTime())) {
@@ -137,12 +135,28 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
           second: "2-digit",
         });
       },
+      // Явно контролируем отображение
+      render: (_, record) => (
+        <Typography.Text style={{ color: "#000", display: "block" }}>
+          {record.createdAt ? new Date(record.createdAt).toLocaleString("ru-RU", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          }) : "—"}
+        </Typography.Text>
+      ),
     },
     {
       title: "Nпп",
       key: "dev_event_id",
       dataIndex: "dev_event_id",
       valueType: "text",
+      render: (value) => (
+        <Typography.Text style={{ color: "#000" }}>{value || "—"}</Typography.Text>
+      ),
     },
     {
       title: "Код",
@@ -159,9 +173,9 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       render: (_, record) => {
         const descr = getEventDescription(record);
         return (
-          <p style={{ margin: 0, width: "32ch", fontWeight: "bold" }}>
+          <Typography.Text strong style={{ color: "#000", display: "block", maxWidth: "32ch" }}>
             {descr}
-          </p>
+          </Typography.Text>
         );
       },
     },
@@ -173,7 +187,7 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       tooltip="Код определяет суть события и состав данных"
       expandable={{
         expandedRowRender: (record) => (
-          <pre style={{ margin: 0, width: "100%", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+          <pre style={{ margin: 0, width: "100%", whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#000" }}>
             {JSON.stringify(record.code, null, 2)}
           </pre>
         ),
@@ -199,7 +213,7 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
           createdAt: item.created_at,
           dev_event_id: item.dev_event_id,
           event_code: item.event_type_code,
-          code: item.payload, // ← объект напрямую
+          code: item.payload,
         }));
 
         return {
@@ -233,6 +247,8 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       }}
       rowKey="createdAt"
       search={false}
+      // Гарантируем светлый фон
+      style={{ background: "#fff" }}
     />
   );
 };

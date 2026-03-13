@@ -12,6 +12,16 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+/* Гарантия видимости иконки раскрытия */
+.ant-table-row-expand-icon {
+  color: #000 !important;
+  border-color: #000 !important;
+}
+
+.ant-table-row-expand-icon::before,
+.ant-table-row-expand-icon::after {
+  background-color: #000 !important;
+}
 /* 
 a {
   font-weight: 500;

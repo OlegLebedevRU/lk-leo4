@@ -1,11 +1,14 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+// entry.client.tsx
+import { createRoot } from "react-dom/client";
 import { HydratedRouter } from "react-router/dom";
 import "./index.css";
+import React from "react";
 
-ReactDOM.hydrateRoot(
-  document,
+const container = document.body;
+
+// Вместо hydrateRoot — используем createRoot
+createRoot(container).render(
   <React.StrictMode>
     <HydratedRouter />
-  </React.StrictMode>,
+  </React.StrictMode>
 );

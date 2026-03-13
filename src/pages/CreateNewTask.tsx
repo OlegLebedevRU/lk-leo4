@@ -1,17 +1,20 @@
-import { DownloadOutlined, PlusOutlined, SendOutlined } from "@ant-design/icons";
+import {
+  DownloadOutlined,
+  PlusOutlined,
+  SendOutlined,
+} from '@ant-design/icons';
 import {
   ModalForm,
   ProCard,
   ProDescriptions,
   ProForm,
   ProFormDigit,
-  ProFormField,
   ProFormText,
   ProFormTextArea,
-} from "@ant-design/pro-components";
-import { Button, Divider, Form, message, Space } from "antd";
-import { useState } from "react";
-import { axiosPrivate } from "../common/httpPrivate";
+} from '@ant-design/pro-components';
+import { Button, Divider, Form, message, Space } from 'antd';
+import { useState } from 'react';
+import { axiosPrivate } from '../common/httpPrivate';
 
 // === Типы ===
 type DeviceTaskPayload = Record<string, unknown> & {
@@ -27,7 +30,7 @@ type NewDeviceTask = {
   payload?: DeviceTaskPayload;
 };
 
-type NewDeviceTaskFormValues = Omit<NewDeviceTask, "payload"> & {
+type NewDeviceTaskFormValues = Omit<NewDeviceTask, 'payload'> & {
   payload?: string;
 };
 
@@ -35,11 +38,12 @@ type DetailListProps = {
   device_id: string;
 };
 
-type Rule = { field: string }; // Для устранения ошибки типа
+// Для корректной типизации правил валидации
+type Rule = { field: string };
 
 // === Валидация payload ===
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function parsePayload(payloadText: string | undefined): DeviceTaskPayload | undefined {
@@ -50,14 +54,14 @@ function parsePayload(payloadText: string | undefined): DeviceTaskPayload | unde
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("payload должен быть валидным JSON");
+    throw new Error('payload должен быть валидным JSON');
   }
 
   if (!isRecord(parsed)) {
-    throw new Error("payload должен быть объектом");
+    throw new Error('payload должен быть объектом');
   }
 
-  const dt = parsed["dt"];
+  const dt = parsed.dt;
   if (!Array.isArray(dt)) {
     throw new Error('payload должен содержать массив объектов в поле "dt"');
   }
@@ -89,15 +93,15 @@ function buildPacketPreview(values: NewDeviceTaskFormValues): string {
         payload_error: errorMessage,
       },
       null,
-      2
+      2,
     );
   }
 }
 
 // === Генерация случайного ext_task_id ===
-function rstr(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
+function generateExtTaskId(): string {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
   for (let i = 0; i < 20; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
@@ -107,28 +111,28 @@ function rstr(): string {
 // === Стиль для блока JSON ===
 const codeBlockStyle = {
   margin: 0,
-  fontSize: "12px",
-  fontFamily: "Consolas, Monaco, 'Courier New', monospace",
-  color: "#dcdcdc",
-  background: "#1e1e1e",
-  padding: "12px",
-  borderRadius: "6px",
-  border: "1px solid #3c3c3c",
-  overflow: "auto" as const,
-  maxHeight: "300px",
+  fontSize: '12px',
+  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+  color: '#dcdcdc',
+  background: '#1e1e1e',
+  padding: '12px',
+  borderRadius: '6px',
+  border: '1px solid #3c3c3c',
+  overflow: 'auto' as const,
+  maxHeight: '300px',
 };
 
 // === Компонент ===
 const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   const [form] = Form.useForm<NewDeviceTaskFormValues>();
   const [loadings, setLoadings] = useState<boolean[]>([]);
-  const [task_resp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
-  const [task_result, setTaskResult] = useState<unknown>(undefined);
+  const [taskResp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
+  const [taskResult, setTaskResult] = useState<unknown>(undefined);
 
-  // Отслеживаем значения формы
+  // Отслеживаем значения формы для предпросмотра
   const formValues = Form.useWatch([], form);
 
-  // ✅ Вычисляем packet напрямую — без setState в useEffect
+  // Динамически генерируем JSON-представление
   const packet = formValues ? buildPacketPreview(formValues) : '';
 
   const enterLoading = (index: number) => {
@@ -168,17 +172,16 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             method_code: 20,
             priority: 0,
             ttl: 1,
-            ext_task_id: rstr(),
+            ext_task_id: generateExtTaskId(),
             payload: '{"dt": [ {"mt": 0 } ]}',
           });
           setTaskResp(undefined);
           setTaskResult(undefined);
         }
-        return true;
       }}
     >
       <ProCard split="vertical">
-        {/* Левая часть: форма ввода */}
+        {/* Левая часть: форма */}
         <ProCard>
           <ProFormText
             name="ext_task_id"
@@ -186,8 +189,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             fieldProps={{
               style: {
                 fontSize: 16,
-                color: "#dae7f0ff",
-                backgroundColor: "#0f0e0eff",
+                color: '#dae7f0ff',
+                backgroundColor: '#0f0e0eff',
               },
             }}
           />
@@ -199,7 +202,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               width="xs"
               initialValue={Number(device_id)}
               disabled
-              style={{ width: 120, fontWeight: "bolder" }}
+              style={{ width: 120, fontWeight: 'bolder' }}
             />
             <ProFormDigit
               name="method_code"
@@ -227,7 +230,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             />
           </ProForm.Group>
 
-          <Divider variant="dashed" style={{ borderColor: "#7cb305" }}>
+          <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
             Payload
           </Divider>
 
@@ -240,8 +243,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               style: {
                 height: 120,
                 fontSize: 14,
-                color: "#dae7f0ff",
-                backgroundColor: "#0f0e0eff",
+                color: '#dae7f0ff',
+                backgroundColor: '#0f0e0eff',
               },
             }}
             rules={[
@@ -257,22 +260,16 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
 
         {/* Правая часть: предпросмотр и действия */}
         <ProCard split="horizontal">
-          <ProCard title="Формат пакета задачи" headerBordered collapsible>
-            <ProFormField
-              mode="read"
-              valueType="code"
-              text={packet}
-              fieldProps={{
-                style: {
-                  width: "100%",
-                  fontSize: 14,
-                  color: "#dae7f0ff",
-                  backgroundColor: "#0f0e0eff",
-                },
-              }}
-            />
+          <ProCard
+            title="Формат пакета задачи"
+            headerBordered
+            collapsible
+          >
+            <ProForm.Item noStyle>
+              <pre style={codeBlockStyle}>{packet}</pre>
+            </ProForm.Item>
 
-            <Space style={{ marginTop: 12 }}>
+            <Space style={{ marginTop: 12 }} wrap>
               <Button
                 type="primary"
                 icon={<SendOutlined />}
@@ -282,50 +279,57 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     enterLoading(3);
                     await form.validateFields();
                     const task = toNewDeviceTaskRequest(form.getFieldsValue());
-                    const resp = await axiosPrivate.post("/api/v1/device-tasks/", task);
+                    const resp = await axiosPrivate.post('/api/v1/device-tasks/', task);
                     setTaskResp(resp.data);
+                    message.success('Задача отправлена');
                   } catch (e) {
-                    const msg = e instanceof Error ? e.message : "Не удалось отправить задачу";
-                    message.error(msg);
+                    const errorMsg =
+                      e instanceof Error ? e.message : 'Не удалось отправить задачу';
+                    message.error(errorMsg);
                   }
                 }}
               >
-                Send task
+                Отправить задачу
               </Button>
 
               <Button
                 type="primary"
                 icon={<DownloadOutlined />}
                 onClick={async () => {
-                  if (!task_resp?.id) {
-                    message.warning("Сначала отправьте задачу (нет id)");
+                  if (!taskResp?.id) {
+                    message.warning('Сначала отправьте задачу (нет id)');
                     return;
                   }
-                  const resp = await axiosPrivate.get(`/api/v1/device-tasks/${task_resp.id}`);
-                  setTaskResult(resp.data);
+                  try {
+                    const resp = await axiosPrivate.get(`/api/v1/device-tasks/${taskResp.id}`);
+                    setTaskResult(resp.data);
+                    message.success('Результат получен');
+                  } catch (e) {
+                    message.error('Ошибка при получении результата');
+                  }
                 }}
               >
-                Get task result
+                Получить результат
               </Button>
             </Space>
           </ProCard>
 
-          <Divider variant="dashed" style={{ borderColor: "#3e3f41ff" }}>
-            Response / Result
+          <Divider variant="dashed" style={{ borderColor: '#3e3f41ff' }}>
+            Ответ / Результат
           </Divider>
 
           <ProDescriptions column={1}>
-            <ProDescriptions.Item label="Touch task response">
+            <ProDescriptions.Item label="Ответ сервера">
               <pre style={codeBlockStyle}>
-                {task_resp ? JSON.stringify(task_resp, null, 2) : "—"}
+                {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}
               </pre>
             </ProDescriptions.Item>
           </ProDescriptions>
 
           <ProDescriptions column={1}>
-            <ProDescriptions.Item label="Task result">
+            <ProDescriptions.Item label="Результат задачи">
               <pre style={codeBlockStyle}>
-                {task_result ? JSON.stringify(task_result, null, 2) : "—"}
+                {taskResult ? JSON.stringify(taskResult, null, 2) : '—'}
               </pre>
             </ProDescriptions.Item>
           </ProDescriptions>

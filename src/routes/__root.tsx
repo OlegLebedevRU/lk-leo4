@@ -1,18 +1,15 @@
-// src/root.tsx
+// src/routes/__root.tsx
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
-} from "react-router-dom";
-import { App as AntdApp, ConfigProvider } from "antd";
-import ruRU from "antd/locale/ru_RU";
-import { theme } from "antd";
-// src/root.tsx
-export function HydrateFallback() {
-  return <p>Загрузка приложения...</p>;
-}
+} from 'react-router-dom';
+import { App as AntdApp, ConfigProvider } from 'antd';
+import ruRU from 'antd/locale/ru_RU';
+import { theme } from 'antd';
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -27,6 +24,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <Scripts />
     </>
   );
+}
+
+export function HydrateFallback() {
+  return <h2>Загрузка...</h2>;
 }
 
 export default function Root() {

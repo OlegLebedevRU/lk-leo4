@@ -1,5 +1,14 @@
-import Monitoring from "./pages/home";
+// src/catchall.tsx
+import { useRouteError } from "react-router-dom";
 
-export default function Component() {
-  return  ( <Monitoring/>  )  
+export default function CatchAll() {
+  const error = useRouteError();
+  console.error(error);
+
+  return (
+    <div style={{ padding: 20 }}>
+      <h2>404</h2>
+      <p>Страница не найдена</p>
+    </div>
+  );
 }

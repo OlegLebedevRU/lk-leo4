@@ -1,13 +1,27 @@
 // src/pages/TasksList.tsx
 import { ProTable, type ProColumns } from '@ant-design/pro-components';
-import { Tag, Typography, Spin, Button, Tooltip } from 'antd';
-import { ClockCircleOutlined, SyncOutlined, CheckCircleOutlined, CloseCircleOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  Tag,
+  Typography,
+  Spin,
+  Button,
+  Tooltip,
+
+} from 'antd';
+import {
+  ClockCircleOutlined,
+  SyncOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  QuestionCircleOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import NewTask from './CreateNewTask';
 import { axiosPrivate } from '../common/httpPrivate';
 
 import { useState, type Key } from 'react';
 
-const { Text, Paragraph } = Typography;
+const { Text: AntText, Paragraph: AntParagraph } = Typography;
 
 // Тип для строки таблицы
 type TableListTask = {
@@ -264,41 +278,58 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
     }
   };
 
-  // Колонки таблицы
+  // Колонки таблицы — с исправленной сигнатурой render
   const columns: ProColumns<TableListTask>[] = [
     {
       title: 'Дата/время',
       key: 'created_at',
       dataIndex: 'created_at',
       width: '30%',
+      render: (dom, record) => (
+        <Typography.Text style={{ color: '#000', display: 'block' }}>
+          {dom || '—'}
+        </Typography.Text>
+      ),
     },
     {
       title: 'Статус',
       key: 'status',
       width: 80,
       dataIndex: 'status',
-      render: (_, record) => getStatusTag(record.status),
+      render: (dom, record) => getStatusTag(record.status),
     },
     {
       title: 'Код команды',
       key: 'method_code',
       width: 100,
       dataIndex: 'method_code',
-      render: (_, record) => <Tag color="blue">{record.method_code}</Tag>,
+      render: (dom, record) => (
+        <Typography.Text style={{ color: '#000' }}>
+          <Tag color="blue">{record.method_code}</Tag>
+        </Typography.Text>
+      ),
     },
     {
       title: 'Приоритет',
       key: 'priority',
       width: 90,
       dataIndex: 'priority',
-      render: (_, record) => <Tag color="orange">{record.priority}</Tag>,
+      render: (dom, record) => (
+        <Typography.Text style={{ color: '#000' }}>
+          <Tag color="orange">{record.priority}</Tag>
+        </Typography.Text>
+      ),
     },
     {
       title: 'TTL (мин)',
       key: 'ttl_minutes',
       width: 80,
       dataIndex: 'ttl_minutes',
-      render: (_, record) => <Text code>{record.ttl_minutes}</Text>,
+      render: (dom, record) => (
+        <Typography.Text style={{ color: '#000' }}>
+          <AntText code>{record.ttl_minutes}</AntText>
+        </Typography.Text>
+      ),
     },
   ];
 
@@ -330,42 +361,42 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
 
           return (
             <div style={{ padding: '16px', backgroundColor: '#f9f9f9', borderRadius: '8px', maxWidth: '800px' }}>
-              <Paragraph>
-                <Text strong>ID задачи: </Text>
-                <Text code copyable>{detail.id}</Text>
-              </Paragraph>
+              <AntParagraph>
+                <AntText strong>ID задачи: </AntText>
+                <AntText code copyable>{detail.id}</AntText>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>Ext ID: </Text>
-                <Text>{detail.ext_task_id}</Text>
-              </Paragraph>
+              <AntParagraph>
+                <AntText strong>Ext ID: </AntText>
+                <AntText>{detail.ext_task_id}</AntText>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>Метод: </Text>
+              <AntParagraph>
+                <AntText strong>Метод: </AntText>
                 <Tag color="blue">{detail.method_code}</Tag>
-              </Paragraph>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>Приоритет: </Text>
+              <AntParagraph>
+                <AntText strong>Приоритет: </AntText>
                 <Tag color="orange">{detail.priority}</Tag>
-              </Paragraph>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>TTL: </Text>
-                <Text>{detail.ttl_minutes} мин</Text>
-              </Paragraph>
+              <AntParagraph>
+                <AntText strong>TTL: </AntText>
+                <AntText>{detail.ttl_minutes} мин</AntText>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>Статус: </Text>
+              <AntParagraph>
+                <AntText strong>Статус: </AntText>
                 {getStatusTag(detail.status)}
-              </Paragraph>
+              </AntParagraph>
 
-              <Paragraph>
-                <Text strong>Создана: </Text>
-                <Text>{detail.created_at}</Text>
-              </Paragraph>
+              <AntParagraph>
+                <AntText strong>Создана: </AntText>
+                <AntText>{detail.created_at}</AntText>
+              </AntParagraph>
 
-              <Paragraph>
+              <AntParagraph>
                 <Button
                   size="small"
                   loading={loadingRows[record.task_id]}
@@ -373,11 +404,11 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
                 >
                   Обновить
                 </Button>
-              </Paragraph>
+              </AntParagraph>
 
               {detail.allResults && detail.allResults.length > 0 && (
-                <Paragraph>
-                  <Text strong>Результаты выполнения:</Text>
+                <AntParagraph>
+                  <AntText strong>Результаты выполнения:</AntText>
                   <pre
                     style={{
                       margin: '8px 0',
@@ -392,11 +423,12 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
                       overflow: 'auto',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
+                      color: '#000',
                     }}
                   >
                     {JSON.stringify(detail.allResults, null, 2)}
                   </pre>
-                </Paragraph>
+                </AntParagraph>
               )}
             </div>
           );
@@ -463,6 +495,7 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
         showSizeChanger: false,
       }}
       toolBarRender={() => [<NewTask device_id={device_id} key="new-task" />]}
+      style={{ background: '#fff' }} // ← светлый фон
     />
   );
 };
