@@ -20,7 +20,8 @@ import NewTask from './CreateNewTask';
 import { axiosPrivate } from '../common/httpPrivate';
 
 import { useState, type Key } from 'react';
-
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Светлая тема для светлого фона
 const { Text: AntText, Paragraph: AntParagraph } = Typography;
 
 // Тип для строки таблицы
@@ -188,7 +189,7 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
     setLoadingRows((prev) => ({ ...prev, [taskId]: true }));
 
     try {
-      const response = await axiosPrivate.get<ApiDeviceTaskResponse>(`/api/v1/device-tasks/${taskId}`);
+      const response = await axiosPrivate.get<ApiDeviceTaskResponse>(`/device-tasks/${taskId}`);
       const data = response.data;
 
       if (!data) {
@@ -222,7 +223,7 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
 
       const interval = setInterval(async () => {
         try {
-          const pollResp = await axiosPrivate.get<ApiDeviceTaskResponse>(`/api/v1/device-tasks/${taskId}`);
+          const pollResp = await axiosPrivate.get<ApiDeviceTaskResponse>(`/device-tasks/${taskId}`);
           const pollData = pollResp.data;
 
           const updatedDetail: FullTaskDetail = {
@@ -285,11 +286,11 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
       key: 'created_at',
       dataIndex: 'created_at',
       width: '30%',
-      render: (dom, record) => (
-        <Typography.Text style={{ color: '#000', display: 'block' }}>
-          {dom || '—'}
-        </Typography.Text>
-      ),
+     render: (dom) => (
+      <Typography.Text style={{ color: '#000', display: 'block' }}>
+        {dom || '—'}
+      </Typography.Text>
+    ),
     },
     {
       title: 'Статус',
@@ -409,25 +410,23 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
               {detail.allResults && detail.allResults.length > 0 && (
                 <AntParagraph>
                   <AntText strong>Результаты выполнения:</AntText>
-                  <pre
-                    style={{
-                      margin: '8px 0',
-                      padding: '12px',
-                      backgroundColor: '#f5f5f5',
-                      border: '1px solid #d9d9d9',
-                      borderRadius: '4px',
-                      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                      fontSize: '13px',
-                      lineHeight: 1.5,
-                      maxHeight: 400,
-                      overflow: 'auto',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      color: '#000',
-                    }}
-                  >
-                    {JSON.stringify(detail.allResults, null, 2)}
-                  </pre>
+                  <SyntaxHighlighter
+  language="json"
+  style={vs}
+  customStyle={{
+    margin: '8px 0',
+    padding: '12px',
+    backgroundColor: '#f5f5f5', // Совпадает с вашим стилем
+    border: '1px solid #d9d9d9',
+    borderRadius: '4px',
+    fontSize: '13px',
+    lineHeight: 1.5,
+    maxHeight: 400,
+    overflow: 'auto',
+  }}
+>
+  {JSON.stringify(detail.allResults, null, 2)}
+</SyntaxHighlighter>
                 </AntParagraph>
               )}
             </div>
@@ -456,7 +455,7 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
               ttl: number;
             }>;
             total: number;
-          }>('/api/v1/device-tasks/', {
+          }>('/device-tasks/', {
             params: {
               device_id,
               page: params.current,

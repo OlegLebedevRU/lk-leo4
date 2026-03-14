@@ -7,7 +7,8 @@ import DetailList from './TasksList';
 import TagList from './DeviceTags';
 import { axiosPrivate } from '../common/httpPrivate';
 import type { DeviceApiResponse, DeviceId } from '../features/devices/types';
-
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 type TabKey = 'context' | 'tasks' | 'events' | 'tags';
 
 type SelectedDevice = {
@@ -49,7 +50,7 @@ const Monitoring: React.FC = () => {
     setDeviceInfo(null);
 
     try {
-      const response = await axiosPrivate.get<DeviceInfo>('/api/v1/devices/', {
+      const response = await axiosPrivate.get<DeviceInfo>('/devices/', {
         params: { device_id: deviceId },
       });
       setDeviceInfo(response.data);
@@ -92,18 +93,25 @@ const Monitoring: React.FC = () => {
         bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
       >
         <ProDescriptions layout="vertical">
-          <ProDescriptions.Item
-            fieldProps={{
-              style: {
-                fontSize: 10,
-                color: '#dae7f0ff',
-                backgroundColor: '#0f0e0eff',
-              },
-            }}
-            valueType="jsonCode"
-          >
-            {renderedContent}
-          </ProDescriptions.Item>
+          <ProDescriptions.Item>
+  <SyntaxHighlighter
+    language="json"
+    style={vscDarkPlus}
+    customStyle={{
+      margin: 0,
+      fontSize: '10px', // Совпадает с вашим fieldProps.fontSize
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      color: '#dae7f0ff', // Совпадает с вашим fieldProps.color
+      background: '#0f0e0eff', // Совпадает с вашим fieldProps.backgroundColor
+      padding: '8px', // Небольшой отступ для читаемости
+      borderRadius: '4px',
+      overflow: 'auto',
+      maxHeight: '60vh', // Ограничение высоты, чтобы не выходило за пределы карточки
+    }}
+  >
+    {renderedContent}
+  </SyntaxHighlighter>
+</ProDescriptions.Item>
         </ProDescriptions>
       </ProCard>
     );

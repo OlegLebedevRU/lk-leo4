@@ -3,7 +3,8 @@ import { ProTable, type ProColumns } from "@ant-design/pro-components";
 import { Switch, Tag, Typography } from "antd"; // ← добавлен Typography
 import { useState } from "react";
 import { axiosPrivate } from "../common/httpPrivate";
-
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // Типы
 
 // Рекурсивный тип для JSON-объекта
@@ -187,9 +188,22 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       tooltip="Код определяет суть события и состав данных"
       expandable={{
         expandedRowRender: (record) => (
-          <pre style={{ margin: 0, width: "100%", whiteSpace: "pre-wrap", wordBreak: "break-word", color: "#000" }}>
-            {JSON.stringify(record.code, null, 2)}
-          </pre>
+          <SyntaxHighlighter
+  language="json"
+  style={vscDarkPlus}
+  customStyle={{
+    margin: 0,
+    width: "100%",
+    fontSize: '12px',
+    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+    padding: '8px',
+    borderRadius: '4px',
+    overflow: 'auto',
+    maxHeight: '300px', // Ограничение высоты для длинных JSON
+  }}
+>
+  {JSON.stringify(record.code, null, 2)}
+</SyntaxHighlighter>
         ),
         expandedRowKeys,
         onExpandedRowsChange: (keys) => {
@@ -200,7 +214,7 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       request={async (params) => {
         console.log("Params:", params);
 
-        const response = await axiosPrivate.get<{ items: DeviceEventItem[]; total: number }>("/api/v1/device-events/", {
+        const response = await axiosPrivate.get<{ items: DeviceEventItem[]; total: number }>("/device-events/", {
           params: {
             events_exclude: 44,
             device_id,

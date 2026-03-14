@@ -2,7 +2,7 @@ import { axiosPrivate } from '../../../common/httpPrivate';
 import type { DeviceApiResponse } from '../types';
 
 export async function fetchDevices(): Promise<DeviceApiResponse[]> {
-  const response = await axiosPrivate.get<DeviceApiResponse[]>('/api/v1/devices/');
+  const response = await axiosPrivate.get<DeviceApiResponse[]>('/devices/');
   return response.data;
 }
 

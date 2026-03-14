@@ -2,8 +2,8 @@
 import axios from "axios";
 import { memoizedRefreshToken } from "./httpRefreshToken";
 
-// Базовая настройка без X-Api-Key
-axios.defaults.baseURL = "https://dev.leo4.ru/test";
+// Базовая настройка без X-Api-Key /test
+axios.defaults.baseURL = "https://dev.leo4.ru/api/v1";
 axios.defaults.headers.common["Content-Type"] = "application/json";
 axios.defaults.withCredentials = true;
 

@@ -110,7 +110,7 @@ return (
         columns={columns}
         request={async (params, sorter, filter) => {
                         console.log(params, sorter, filter);    
-                        const {data} = await axiosPrivate.get('/api/v1/devices/', {params: {'device_id': device_id} });                      
+                        const {data} = await axiosPrivate.get('/devices/', {params: {'device_id': device_id} });                      
                         const tagItems: DeviceTagEditable[] = data[0].device_tags.map(
                             (c: {id:number, created_at: string; tag: string; value: string; is_system_tag: boolean}) => {        
                             return {id:c.id, created_at:c.created_at, tag: c.tag, value:c.value, is_system_tag: c.is_system_tag }
@@ -124,7 +124,7 @@ return (
           editableKeys,
           onSave: async (rowKey, data, row) => {
             
-            const resp = await axiosPrivate.put('/api/v1/devices/'+String(device_id), {'tag':data.tag, 'value':data.value});
+            const resp = await axiosPrivate.put('/devices/'+String(device_id), {'tag':data.tag, 'value':data.value});
             console.log(rowKey, data, row, resp);
           },
           onChange: setEditableRowKeys,

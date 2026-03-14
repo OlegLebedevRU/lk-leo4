@@ -15,7 +15,20 @@ import {
 import { Button, Divider, Form, message, Space } from 'antd';
 import { useState } from 'react';
 import { axiosPrivate } from '../common/httpPrivate';
-
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Тёмная тема, подходящая под ваш стиль
+import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Светлая тема
+// Добавьте это после импортов, перед типами или функциями
+function formatJson(value: string): string {
+  if (!value.trim()) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return JSON.stringify(parsed, null, 2); // 2 пробела для отступов
+  } catch {
+    // Если JSON невалиден, возвращаем как есть (чтобы не ломать ввод)
+    return value;
+  }
+}
 // === Типы ===
 type DeviceTaskPayload = Record<string, unknown> & {
   dt: Array<Record<string, unknown>>;
@@ -109,18 +122,18 @@ function generateExtTaskId(): string {
 }
 
 // === Стиль для блока JSON ===
-const codeBlockStyle = {
-  margin: 0,
-  fontSize: '12px',
-  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-  color: '#dcdcdc',
-  background: '#1e1e1e',
-  padding: '12px',
-  borderRadius: '6px',
-  border: '1px solid #3c3c3c',
-  overflow: 'auto' as const,
-  maxHeight: '300px',
-};
+// const codeBlockStyle = {
+//   margin: 0,
+//   fontSize: '12px',
+//   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+//   color: '#dcdcdc',
+//   background: '#1e1e1e',
+//   padding: '12px',
+//   borderRadius: '6px',
+//   border: '1px solid #3c3c3c',
+//   overflow: 'auto' as const,
+//   maxHeight: '300px',
+// };
 
 // === Компонент ===
 const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
@@ -204,14 +217,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               disabled
               style={{ width: 120, fontWeight: 'bolder' }}
             />
-            <ProFormDigit
-              name="method_code"
-              label="method_code"
-              width="xs"
-              initialValue={20}
-              min={0}
-              max={9999}
-            />
+           
             <ProFormDigit
               name="priority"
               label="priority"
@@ -229,33 +235,52 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               max={44640}
             />
           </ProForm.Group>
-
+          <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
+            Код задачи (команды)
+          </Divider>
+          <ProFormDigit
+              name="method_code"
+              label="method_code"
+              width="xs"
+              initialValue={20}
+              min={0}
+              max={9999}
+            />
           <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
             Payload
           </Divider>
 
-          <ProFormTextArea
-            name="payload"
-            label="payload"
-            initialValue='{"dt": [ {"mt": 0 } ]}'
-            valueType="code"
-            fieldProps={{
-              style: {
-                height: 120,
-                fontSize: 14,
-                color: '#dae7f0ff',
-                backgroundColor: '#0f0e0eff',
-              },
-            }}
-            rules={[
-              {
-                validator: async (_rule: Rule, value: string | undefined) => {
-                  if (!value?.trim()) return;
-                  parsePayload(value);
-                },
-              },
-            ]}
-          />
+<ProFormTextArea
+  name="payload"
+  label="payload"
+  initialValue={JSON.stringify({ dt: [{ mt: 0 }] }, null, 2)}
+  fieldProps={{
+    style: {
+      height: 180,
+      fontSize: 18,
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      whiteSpace: 'pre-wrap',
+      wordWrap: 'break-word',
+      backgroundColor: '#0f0e0eff',
+      color: '#dae7f0ff',
+      resize: 'vertical',
+    },
+    autoSize: { minRows: 6, maxRows: 10 },
+    onChange: (e) => {
+      const formatted = formatJson(e.target.value);
+      // Устанавливаем отформатированное значение обратно в поле
+      form.setFieldsValue({ payload: formatted });
+    },
+  }}
+  rules={[
+    {
+      validator: async (_rule: Rule, value: string | undefined) => {
+        if (!value?.trim()) return;
+        parsePayload(value);
+      },
+    },
+  ]}
+/>
         </ProCard>
 
         {/* Правая часть: предпросмотр и действия */}
@@ -266,8 +291,24 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             collapsible
           >
             <ProForm.Item noStyle>
-              <pre style={codeBlockStyle}>{packet}</pre>
-            </ProForm.Item>
+  <SyntaxHighlighter
+    language="json"
+    style={materialDark} // Или другая тема, например, dark или materialDark
+    customStyle={{
+      margin: 0,
+      fontSize: '12px',
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      padding: '12px',
+      borderRadius: '6px',
+      border: '1px solid #3c3c3c',
+      overflow: 'auto',
+      maxHeight: '300px',
+      background: '#1e1e1e', // Совпадает с вашим codeBlockStyle
+    }}
+  >
+    {packet}
+  </SyntaxHighlighter>
+</ProForm.Item>
 
             <Space style={{ marginTop: 12 }} wrap>
               <Button
@@ -279,7 +320,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     enterLoading(3);
                     await form.validateFields();
                     const task = toNewDeviceTaskRequest(form.getFieldsValue());
-                    const resp = await axiosPrivate.post('/api/v1/device-tasks/', task);
+                    const resp = await axiosPrivate.post('/device-tasks/', task);
                     setTaskResp(resp.data);
                     message.success('Задача отправлена');
                   } catch (e) {
@@ -301,11 +342,12 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     return;
                   }
                   try {
-                    const resp = await axiosPrivate.get(`/api/v1/device-tasks/${taskResp.id}`);
+                    const resp = await axiosPrivate.get(`/device-tasks/${taskResp.id}`);
                     setTaskResult(resp.data);
                     message.success('Результат получен');
-                  } catch (e) {
-                    message.error('Ошибка при получении результата');
+                 } catch (e) {
+                  const errorMsg = e instanceof Error ? e.message : 'Ошибка при получении результата';
+                   message.error(errorMsg);
                   }
                 }}
               >
@@ -320,18 +362,46 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
 
           <ProDescriptions column={1}>
             <ProDescriptions.Item label="Ответ сервера">
-              <pre style={codeBlockStyle}>
-                {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}
-              </pre>
-            </ProDescriptions.Item>
+  <SyntaxHighlighter
+    language="json"
+     style={vs}
+    customStyle={{
+      margin: 0,
+      fontSize: '12px',
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      padding: '12px',
+      borderRadius: '6px',
+      border: '1px solid #d9d9d9', // Светлая граница для светлого фона
+      overflow: 'auto',
+      maxHeight: '300px',
+      background: '#f5f5f5', // Светлый фон, подходящий под тему vs
+    }}
+  >
+    {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}
+  </SyntaxHighlighter>
+</ProDescriptions.Item>
           </ProDescriptions>
 
           <ProDescriptions column={1}>
-            <ProDescriptions.Item label="Результат задачи">
-              <pre style={codeBlockStyle}>
-                {taskResult ? JSON.stringify(taskResult, null, 2) : '—'}
-              </pre>
-            </ProDescriptions.Item>
+           <ProDescriptions.Item label="Результат задачи">
+  <SyntaxHighlighter
+    language="json"
+    // style={vs}
+    customStyle={{
+      margin: 0,
+      fontSize: '12px',
+      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+      padding: '12px',
+      borderRadius: '6px',
+      border: '1px solid #d9d9d9',
+      overflow: 'auto',
+      maxHeight: '300px',
+      background: '#f5f5f5',
+    }}
+  >
+    {taskResult ? JSON.stringify(taskResult, null, 2) : '—'}
+  </SyntaxHighlighter>
+</ProDescriptions.Item>
           </ProDescriptions>
         </ProCard>
       </ProCard>
