@@ -47,6 +47,16 @@ src/
 - [Form Component](https://ant.design/components/form) - формы
 - [Modal Component](https://ant.design/components/modal) - модальные окна
 
+## Backend API
+
+- [Leo4 API Documentation](./backend-api.md) - полная документация бэкенда
+  - Device Tasks - управление задачами
+  - Device Events - события с пагинацией
+  - Devices - управление устройствами
+  - Postamats - работа с постаматами
+  - Webhooks - настройка вебхуков
+  - Gauges - показания датчиков
+
 ## Важные файлы
 
 - [`src/features/tasks/domain/taskCreation.ts`](src/features/tasks/domain/taskCreation.ts) - создание задач
