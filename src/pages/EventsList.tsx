@@ -1,7 +1,7 @@
 // src/pages/EventsList.tsx
-import { ProTable, type ProColumns } from "@ant-design/pro-components";
-import { Switch, Tag, Typography } from "antd"; // ← добавлен Typography
-import { useState } from "react";
+import { ProTable, type ProColumns, type ActionType } from "@ant-design/pro-components";
+import { Switch, Tag, Typography } from "antd";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { fetchEvents } from "../features/events/api/events";
 import { mapEventsToListItems, getEventDescription } from "../features/events/domain/eventMapping";
 import type { EventListItem } from "../features/events/types";
@@ -10,15 +10,42 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 type EventListProps = {
   device_id: string;
+  onRefresh?: (triggerRefresh: () => void) => void;
 };
 
-// Основной компонент
-const EventList: React.FC<EventListProps> = ({ device_id }) => {
+const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
   const [viewMode, setViewMode] = useState<"compact" | "full">("compact");
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [pageData, setPageData] = useState<EventListItem[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [newEventKeys, setNewEventKeys] = useState<Set<string>>(new Set());
+  const actionRef = useRef<ActionType>(null);
+  const prevEventIds = useRef<Set<string>>(new Set());
 
   const isCompactView = viewMode === "compact";
+
+  // Функция для мягкого обновления
+  const handleSoftRefresh = useCallback(() => {
+    console.log('[EventsList] handleSoftRefresh called, currentPage:', currentPage);
+    
+    // Обновляем всегда при автообновлении от DeviceList
+    // Не проверяем activeTab, чтобы работал авторефреш
+    if (currentPage === 1 && actionRef.current) {
+      console.log('[EventsList] Calling reload');
+      actionRef.current.reload();
+    } else {
+      console.log('[EventsList] Skipping refresh - conditions not met, currentPage:', currentPage);
+    }
+  }, [currentPage]);
+
+  // Регистрируем функцию обновления
+  useEffect(() => {
+    console.log('[EventsList] useEffect called, onRefresh:', !!onRefresh);
+    if (onRefresh) {
+      console.log('[EventsList] Registering handleSoftRefresh');
+      onRefresh(handleSoftRefresh);
+    }
+  }, [onRefresh, handleSoftRefresh]);
 
   const handleViewModeChange = (checked: boolean) => {
     const mode: "compact" | "full" = checked ? "compact" : "full";
@@ -37,36 +64,28 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       dataIndex: "createdAt",
       valueType: "text",
       width: "30%",
-      renderText: (value: string) => {
-        if (!value) return "—";
-
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-          const [main] = value.split(".");
-          return main;
-        }
-        return date.toLocaleString("ru-RU", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        });
+      render: (_, record) => {
+        const isNew = newEventKeys.has(record.createdAt);
+        return (
+          <Typography.Text style={{ 
+            color: "#000", 
+            display: "block",
+            backgroundColor: isNew ? '#fff3cd' : 'transparent',
+            padding: isNew ? '2px 4px' : '0',
+            borderRadius: isNew ? '2px' : '0',
+            transition: 'background-color 0.5s ease',
+          }}>
+            {record.createdAt ? new Date(record.createdAt).toLocaleString("ru-RU", {
+              year: "numeric",
+              month: "2-digit",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            }) : "—"}
+          </Typography.Text>
+        );
       },
-      // Явно контролируем отображение
-      render: (_, record) => (
-        <Typography.Text style={{ color: "#000", display: "block" }}>
-          {record.createdAt ? new Date(record.createdAt).toLocaleString("ru-RU", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit",
-          }) : "—"}
-        </Typography.Text>
-      ),
     },
     {
       title: "Nпп",
@@ -102,26 +121,27 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
 
   return (
     <ProTable<EventListItem>
+      actionRef={actionRef}
       headerTitle="События"
       tooltip="Код определяет суть события и состав данных"
       expandable={{
         expandedRowRender: (record) => (
           <SyntaxHighlighter
-  language="json"
-  style={vscDarkPlus}
-  customStyle={{
-    margin: 0,
-    width: "100%",
-    fontSize: '12px',
-    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-    padding: '8px',
-    borderRadius: '4px',
-    overflow: 'auto',
-    maxHeight: '300px', // Ограничение высоты для длинных JSON
-  }}
->
-  {JSON.stringify(record.code, null, 2)}
-</SyntaxHighlighter>
+            language="json"
+            style={vscDarkPlus}
+            customStyle={{
+              margin: 0,
+              width: "100%",
+              fontSize: '12px',
+              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+              padding: '8px',
+              borderRadius: '4px',
+              overflow: 'auto',
+              maxHeight: '300px',
+            }}
+          >
+            {JSON.stringify(record.code, null, 2)}
+          </SyntaxHighlighter>
         ),
         expandedRowKeys,
         onExpandedRowsChange: (keys) => {
@@ -130,14 +150,42 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       }}
       columns={columns}
       request={async (params) => {
-        console.log("Params:", params);
+        const page = params.current || 1;
+        setCurrentPage(page);
 
         const response = await fetchEvents(device_id, {
-          page: params.current,
+          page: page,
           size: params.pageSize,
         });
 
         const eventItems: EventListItem[] = mapEventsToListItems(response.items);
+
+        // Определяем новые события только для первой страницы
+        if (page === 1) {
+          const currentIds = new Set(eventItems.map(item => item.createdAt));
+          const newIds = new Set<string>();
+          
+          currentIds.forEach(id => {
+            if (!prevEventIds.current.has(id)) {
+              newIds.add(id);
+            }
+          });
+          
+          if (newIds.size > 0) {
+            setNewEventKeys(prev => new Set([...prev, ...newIds]));
+          }
+          
+          prevEventIds.current = currentIds;
+          
+          // Очищаем подсветку через 60 секунд
+          setTimeout(() => {
+            setNewEventKeys(prev => {
+              const updated = new Set(prev);
+              newIds.forEach(id => updated.delete(id));
+              return updated;
+            });
+          }, 60000);
+        }
 
         return {
           data: eventItems,
@@ -170,7 +218,6 @@ const EventList: React.FC<EventListProps> = ({ device_id }) => {
       }}
       rowKey="createdAt"
       search={false}
-      // Гарантируем светлый фон
       style={{ background: "#fff" }}
     />
   );

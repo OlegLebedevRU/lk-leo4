@@ -3,24 +3,6 @@
     "file": "assets/chunk-LFPYN7LY-CshaUZlv.js",
     "name": "chunk-LFPYN7LY"
   },
-  "_context-BvAH1NU3.js": {
-    "file": "assets/context-BvAH1NU3.js",
-    "name": "context",
-    "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-CI_c_pG0.js",
-      "_index-Cc67Iszl.js"
-    ]
-  },
-  "_index-ByZCrtLu.js": {
-    "file": "assets/index-ByZCrtLu.js",
-    "name": "index",
-    "imports": [
-      "_index-Cc67Iszl.js",
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-CI_c_pG0.js"
-    ]
-  },
   "_index-CI_c_pG0.js": {
     "file": "assets/index-CI_c_pG0.js",
     "name": "index",
@@ -28,10 +10,28 @@
       "_chunk-LFPYN7LY-CshaUZlv.js"
     ]
   },
-  "_index-Cc67Iszl.js": {
-    "file": "assets/index-Cc67Iszl.js",
+  "_index-DROAJ9eZ.js": {
+    "file": "assets/index-DROAJ9eZ.js",
     "name": "index",
     "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "_index-DpoXb2Az.js": {
+    "file": "assets/index-DpoXb2Az.js",
+    "name": "index",
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-DROAJ9eZ.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "_index-PBY61rzc.js": {
+    "file": "assets/index-PBY61rzc.js",
+    "name": "index",
+    "imports": [
+      "_index-DROAJ9eZ.js",
       "_chunk-LFPYN7LY-CshaUZlv.js",
       "_index-CI_c_pG0.js"
     ]
@@ -66,41 +66,41 @@
     ]
   },
   "src/pages/home.tsx?__react-router-build-client-route": {
-    "file": "assets/home-CotgYtWR.js",
+    "file": "assets/home-BB4_r5zm.js",
     "name": "home",
     "src": "src/pages/home.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
       "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-ByZCrtLu.js",
-      "_index-Cc67Iszl.js",
-      "_context-BvAH1NU3.js",
+      "_index-PBY61rzc.js",
+      "_index-DROAJ9eZ.js",
+      "_index-DpoXb2Az.js",
       "_index-CI_c_pG0.js"
     ]
   },
   "src/pages/login.tsx?__react-router-build-client-route": {
-    "file": "assets/login-oJZO7hCj.js",
+    "file": "assets/login-D7wO5n0I.js",
     "name": "login",
     "src": "src/pages/login.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
       "_chunk-LFPYN7LY-CshaUZlv.js",
       "_ru_RU-D30ec6h0.js",
-      "_index-ByZCrtLu.js",
-      "_index-Cc67Iszl.js",
+      "_index-PBY61rzc.js",
+      "_index-DROAJ9eZ.js",
       "_index-CI_c_pG0.js"
     ]
   },
   "src/root.tsx?__react-router-build-client-route": {
-    "file": "assets/root-CuLUhuE6.js",
+    "file": "assets/root-SYBsWEhR.js",
     "name": "root",
     "src": "src/root.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
       "_chunk-LFPYN7LY-CshaUZlv.js",
       "_ru_RU-D30ec6h0.js",
-      "_index-Cc67Iszl.js",
-      "_context-BvAH1NU3.js",
+      "_index-DROAJ9eZ.js",
+      "_index-DpoXb2Az.js",
       "_index-CI_c_pG0.js"
     ]
   }
