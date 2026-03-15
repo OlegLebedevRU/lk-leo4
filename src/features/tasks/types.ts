@@ -68,4 +68,12 @@ export type NewDeviceTaskFormValues = {
   priority: number;
   ttl: number;
   dt: string; // JSON string of array
+  // Динамические поля для dt в зависимости от method_code
+  dt_cd?: string;       // Для method_code=16: ID карты/пинкод
+  dt_cl?: number;       // Для method_code=16: номер слота/ячейки
+  dt_mt?: number;       // Для method_code=20: номер команды
+  dt_pin?: string;      // Для method_code=35: пинкод
+  dt_values?: number[] | string; // Для method_code=47: массив слотов
+  // Для method_code=16 с множественными объектами
+  dt_items?: Array<{ dt_cd: string; dt_cl: number }>;
 };

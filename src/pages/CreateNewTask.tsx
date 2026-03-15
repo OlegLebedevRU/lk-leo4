@@ -9,13 +9,14 @@ import {
   ProDescriptions,
   ProForm,
   ProFormDigit,
+  ProFormSelect,
   ProFormText,
-  ProFormTextArea,
 } from '@ant-design/pro-components';
 import { App, Button, Divider, Form, Space } from 'antd';
 import { useState } from 'react';
 import { fetchTaskDetail } from '../features/tasks/api/tasks';
-import { formatJson, buildPacketPreview, generateExtTaskId, submitTask } from '../features/tasks/domain/taskCreation';
+import { buildPacketPreview, generateExtTaskId, submitTask } from '../features/tasks/domain/taskCreation';
+import { getMethodCodeConfig, getMethodCodeOptions } from '../features/tasks/domain/methodCodes';
 import type { NewDeviceTaskFormValues } from '../features/tasks/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -46,6 +47,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   const [loadings, setLoadings] = useState<boolean[]>([]);
   const [taskResp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
   const [taskResult, setTaskResult] = useState<unknown>(undefined);
+  const [dtItems, setDtItems] = useState<Array<{ dt_cd: string; dt_cl: number }>>([{ dt_cd: '', dt_cl: 1 }]);
 
   // Отслеживаем значения формы для предпросмотра
   const formValues = Form.useWatch([], form);
@@ -85,13 +87,29 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
       onOpenChange={(open) => {
         if (open) {
           form.resetFields();
+          // Получаем конфигурацию для method_code=20 (по умолчанию)
+          const defaultMethodCode = 20;
+          const config = getMethodCodeConfig(defaultMethodCode);
+          const defaultDtValues: Record<string, unknown> = {};
+          if (config) {
+            config.dtFields.forEach(field => {
+              defaultDtValues[field.fieldName] = field.defaultValue;
+            });
+            // Для поддержки множественных объектов
+            if (config.supportsMultiple) {
+              defaultDtValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
+              setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+            } else {
+              setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+            }
+          }
           form.setFieldsValue({
             device_id: Number(device_id),
-            method_code: 20,
+            method_code: defaultMethodCode,
             priority: 0,
             ttl: 1,
             ext_task_id: generateExtTaskId(),
-            dt: JSON.stringify([{ mt: 0 }], null, 2),
+            ...defaultDtValues,
           });
           setTaskResp(undefined);
           setTaskResult(undefined);
@@ -143,55 +161,235 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
           <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
             Код задачи (команды)
           </Divider>
-          <ProFormDigit
+          <ProFormSelect
               name="method_code"
-              label="method_code"
-              width="xs"
+              label="Код задачи"
+              width="lg"
               initialValue={20}
-              min={0}
-              max={9999}
+              options={getMethodCodeOptions()}
+              fieldProps={{
+                onChange: (value) => {
+                  // Сброс значений dt при смене method_code
+                  const config = getMethodCodeConfig(value as number);
+                  if (config) {
+                    const defaultValues: Record<string, unknown> = {};
+                    config.dtFields.forEach(field => {
+                      defaultValues[field.fieldName] = field.defaultValue;
+                    });
+                    // Для поддержки множественных объектов
+                    if (config.supportsMultiple) {
+                      defaultValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
+                      setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+                    }
+                    form.setFieldsValue(defaultValues);
+                  }
+                }
+              }}
+              tooltip={(() => {
+                const methodCode = form.getFieldValue('method_code') || 20;
+                const config = getMethodCodeConfig(methodCode);
+                return config?.dropdownTooltip;
+              })()}
             />
           <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
-            Payload (данные задачи)
+            Параметры команды (dt)
           </Divider>
-
-<ProFormTextArea
-  name="dt"
-  label="dt - массив объектов/строк/чисел"
-  initialValue={JSON.stringify([{ mt: 0 }], null, 2)}
-  fieldProps={{
-    style: {
-      height: 120,
-      fontSize: 16,
-      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-      whiteSpace: 'pre-wrap',
-      wordWrap: 'break-word',
-      backgroundColor: '#0f0e0eff',
-      color: '#dae7f0ff',
-      resize: 'vertical',
-    },
-    autoSize: { minRows: 4, maxRows: 8 },
-    onChange: (e) => {
-      const formatted = formatJson(e.target.value);
-      form.setFieldsValue({ dt: formatted });
-    },
-  }}
-  rules={[
-    {
-      validator: async (_: any, value: string | undefined) => {
-        if (!value?.trim()) return;
-        try {
-          const parsed = JSON.parse(value);
-          if (!Array.isArray(parsed)) {
-            throw new Error('dt должен быть массивом');
-          }
-        } catch {
-          throw new Error('dt должен быть валидным JSON-массивом');
-        }
-      },
-    },
-  ]}
-/>
+          
+          {/* Динамические поля для dt в зависимости от method_code */}
+          {(() => {
+            const methodCode = form.getFieldValue('method_code') || 20;
+            const config = getMethodCodeConfig(methodCode);
+            if (!config) return null;
+            
+            // Для метода с пустым dt (например, method_code=21)
+            if (config.dtFields.length === 0) {
+              return (
+                <div style={{ marginBottom: 16, color: '#888', fontSize: 12 }}>
+                  {config.description}
+                </div>
+              );
+            }
+            
+            // Для поддержки множественных объектов (method_code=16)
+            if (config.supportsMultiple) {
+              // Используем useState для управления списком
+              const currentItems = form.getFieldValue('dt_items') as Array<{ dt_cd: string; dt_cl: number }> | undefined;
+              const items = currentItems && currentItems.length > 0 ? currentItems : dtItems;
+              
+              return (
+                <>
+                  {items.map((item, index) => (
+                    <ProForm.Group key={index} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 8 }}>
+                      <ProFormText
+                        name={['dt_items', index, 'dt_cd']}
+                        label={index === 0 ? 'ID карты/пинкод' : ''}
+                        tooltip={index === 0 ? 'ID карты или пинкод (до 6 цифр)' : undefined}
+                        placeholder="111111"
+                        style={{ width: 140 }}
+                        fieldProps={{
+                          maxLength: 6,
+                          onChange: (e) => {
+                            // Обновляем значение в массиве
+                            const newItems = [...items];
+                            newItems[index] = { ...newItems[index], dt_cd: e.target.value };
+                            form.setFieldsValue({ dt_items: newItems });
+                          }
+                        }}
+                      />
+                      <ProFormDigit
+                        name={['dt_items', index, 'dt_cl']}
+                        label={index === 0 ? 'Слот/ячейка' : ''}
+                        tooltip={index === 0 ? 'Номер слота/ячейки (1-255)' : undefined}
+                        initialValue={item.dt_cl || 1}
+                        min={1}
+                        max={255}
+                        width={80}
+                      />
+                      {items.length > 1 && (
+                        <Button
+                          type="text"
+                          danger
+                          onClick={() => {
+                            const newItems = items.filter((_, i) => i !== index);
+                            setDtItems(newItems);
+                            form.setFieldsValue({ dt_items: newItems });
+                          }}
+                        >
+                          ✕
+                        </Button>
+                      )}
+                    </ProForm.Group>
+                  ))}
+                  <Button
+                    type="dashed"
+                    onClick={() => {
+                      const newItems = [...items, { dt_cd: '', dt_cl: 1 }];
+                      setDtItems(newItems);
+                      form.setFieldsValue({ dt_items: newItems });
+                    }}
+                    icon={<PlusOutlined />}
+                    style={{ marginTop: 8 }}
+                  >
+                    Добавить ещё
+                  </Button>
+                  <div style={{ marginTop: 8, marginBottom: 16, color: '#888', fontSize: 12 }}>
+                    {config.description}
+                  </div>
+                </>
+              );
+            }
+            
+            // Группировка полей по группам (например, для method_code=16)
+            const groups = config.dtFields.reduce((acc, field) => {
+              const groupName = field.group || 'default';
+              if (!acc[groupName]) {
+                acc[groupName] = [];
+              }
+              acc[groupName].push(field);
+              return acc;
+            }, {} as Record<string, typeof config.dtFields>);
+            
+            return (
+              <>
+                {Object.entries(groups).map(([groupName, fields]) => (
+                  <ProForm.Group key={groupName} style={{ marginBottom: 8 }}>
+                    {fields.map((field) => {
+                      if (field.type === 'numberArray') {
+                        return (
+                          <ProFormText
+                            key={field.fieldName}
+                            name={field.fieldName}
+                            label={field.label}
+                            tooltip={field.tooltip}
+                            initialValue={JSON.stringify(field.defaultValue)}
+                            fieldProps={{
+                              placeholder: field.example ? `Например: ${field.example}` : undefined,
+                            }}
+                            rules={[
+                              {
+                                validator: async (_: unknown, value: string | undefined) => {
+                                  if (!value?.trim()) return;
+                                  try {
+                                    const parsed = JSON.parse(value);
+                                    if (!Array.isArray(parsed)) {
+                                      throw new Error('Значение должно быть массивом');
+                                    }
+                                  } catch {
+                                    throw new Error('Введите массив в формате JSON, например: [1, 2]');
+                                  }
+                                },
+                              },
+                            ]}
+                          />
+                        );
+                      }
+                      if (field.type === 'number') {
+                        return (
+                          <ProFormDigit
+                            key={field.fieldName}
+                            name={field.fieldName}
+                            label={field.label}
+                            tooltip={field.tooltip}
+                            initialValue={field.defaultValue}
+                            fieldProps={{
+                              placeholder: field.example ? `Например: ${field.example}` : undefined,
+                            }}
+                          />
+                        );
+                      }
+                      if (field.type === 'string') {
+                        return (
+                          <ProFormText
+                            key={field.fieldName}
+                            name={field.fieldName}
+                            label={field.label}
+                            tooltip={field.tooltip}
+                            initialValue={field.defaultValue}
+                            fieldProps={{
+                              placeholder: field.example ? `Например: ${field.example}` : undefined,
+                            }}
+                          />
+                        );
+                      }
+                      // stringArray type
+                      return (
+                        <ProFormText
+                          key={field.fieldName}
+                          name={field.fieldName}
+                          label={field.label}
+                          tooltip={field.tooltip}
+                          initialValue={JSON.stringify(field.defaultValue)}
+                          fieldProps={{
+                            placeholder: field.example ? `Например: ${field.example}` : undefined,
+                          }}
+                          rules={[
+                            {
+                              validator: async (_: unknown, value: string | undefined) => {
+                                if (!value?.trim()) return;
+                                try {
+                                  const parsed = JSON.parse(value);
+                                  if (!Array.isArray(parsed)) {
+                                    throw new Error('Значение должно быть массивом');
+                                  }
+                                } catch {
+                                  throw new Error('Введите массив в формате JSON, например: ["123456"]');
+                                }
+                              },
+                            },
+                          ]}
+                        />
+                      );
+                    })}
+                  </ProForm.Group>
+                ))}
+                {config.description && (
+                  <div style={{ marginBottom: 16, color: '#888', fontSize: 12 }}>
+                    {config.description}
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </ProCard>
 
         {/* Правая часть: предпросмотр и действия */}

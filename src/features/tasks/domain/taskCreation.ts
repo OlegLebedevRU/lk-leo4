@@ -1,11 +1,28 @@
 // src/features/tasks/domain/taskCreation.ts
 import { createTask } from '../api/tasks';
 import { formatJson } from './taskMapping';
+import { getMethodCodeConfig } from './methodCodes';
 import type { NewDeviceTaskFormValues, DeviceTaskPayload } from '../types';
 
 export { formatJson };
 
-export function parseDt(dtText: string | undefined): any[] {
+/**
+ * Формирует dt массив из динамических полей формы
+ */
+export function buildDtFromFormValues(values: NewDeviceTaskFormValues): unknown[] {
+  const methodConfig = getMethodCodeConfig(values.method_code);
+  if (methodConfig) {
+    // Проверяем, поддерживает ли метод множественные объекты и есть ли они
+    if (methodConfig.supportsMultiple && methodConfig.buildDtMultiple && values.dt_items && values.dt_items.length > 0) {
+      return methodConfig.buildDtMultiple(values.dt_items);
+    }
+    return methodConfig.buildDt(values);
+  }
+  // Если конфиг не найден, пробуем распарсить dt как JSON (для обратной совместимости)
+  return parseDt(values.dt);
+}
+
+export function parseDt(dtText: string | undefined): unknown[] {
   const raw = dtText?.trim();
   if (!raw) return [];
   try {
@@ -20,18 +37,17 @@ export function parseDt(dtText: string | undefined): any[] {
 }
 
 export function toNewDeviceTaskRequest(values: NewDeviceTaskFormValues): import('../types').NewDeviceTask {
-  const { dt: dtText, ...rest } = values;
-  const dt = parseDt(dtText);
+  const dt = buildDtFromFormValues(values) as import('../types').DeviceTaskPayload['dt'];
   const payload: DeviceTaskPayload = { dt };
   return {
-    ...rest,
+    ...values,
     payload,
   };
 }
 
 export function buildPacketPreview(values: NewDeviceTaskFormValues): string {
   try {
-    const dt = parseDt(values.dt);
+    const dt = buildDtFromFormValues(values) as import('../types').DeviceTaskPayload['dt'];
     const task: import('../types').NewDeviceTask = {
       ext_task_id: values.ext_task_id,
       device_id: values.device_id,
