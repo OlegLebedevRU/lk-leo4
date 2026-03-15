@@ -1,0 +1,91 @@
+{
+  "methodCodes": [
+    {
+      "code": 16,
+      "label": "16 - Привязка карты/пинкода к слоту",
+      "description": "Привязка ID карты/пинкода к слоту/ячейке",
+      "dropdownTooltip": "Привязка ID карты/пинкода к слоту/ячейке",
+      "supportsMultiple": true,
+      "dtFormat": "objectArray",
+      "dtFields": [
+        {
+          "fieldName": "dt_cd",
+          "label": "ID карты/пинкод",
+          "type": "string",
+          "defaultValue": "",
+          "example": "111111",
+          "tooltip": "ID карты или пинкод (до 6 цифр)",
+          "group": "bind"
+        },
+        {
+          "fieldName": "dt_cl",
+          "label": "Слот/ячейка",
+          "type": "number",
+          "defaultValue": 1,
+          "example": 1,
+          "tooltip": "Номер слота/ячейки (1-255)",
+          "group": "bind"
+        }
+      ]
+    },
+    {
+      "code": 20,
+      "label": "20 - Короткие команды",
+      "description": "Отправка коротких команд на устройство",
+      "dropdownTooltip": "Короткие команды",
+      "dtFormat": "objectArray",
+      "objectField": "mt",
+      "dtFields": [
+        {
+          "fieldName": "dt_mt",
+          "label": "Команда",
+          "type": "number",
+          "defaultValue": 4,
+          "example": 4,
+          "tooltip": "Номер команды"
+        }
+      ]
+    },
+    {
+      "code": 21,
+      "label": "21 - Перезагрузка",
+      "description": "Перезагрузка устройства",
+      "dropdownTooltip": "Перезагрузка устройства",
+      "dtFormat": "empty"
+    },
+    {
+      "code": 35,
+      "label": "35 - Ввод пинкода",
+      "description": "Ввести пинкод удаленно",
+      "dropdownTooltip": "Ввести пинкод удаленно",
+      "dtFormat": "stringArray",
+      "dtFields": [
+        {
+          "fieldName": "dt_pin",
+          "label": "Пинкод",
+          "type": "string",
+          "defaultValue": "",
+          "example": "123456",
+          "tooltip": "Пинкод (до 6 цифр)"
+        }
+      ]
+    },
+    {
+      "code": 47,
+      "label": "47 - Удаление привязок",
+      "description": "Удаление всех привязок к слоту/списку слотов",
+      "dropdownTooltip": "Удаление всех привязок к слоту",
+      "dtFormat": "numberArray",
+      "dtFields": [
+        {
+          "fieldName": "dt_values",
+          "label": "Слоты",
+          "type": "numberArray",
+          "defaultValue": [1],
+          "example": "[1, 2]",
+          "tooltip": "Номера слотов для удаления привязок"
+        }
+      ]
+    }
+  ]
+}
