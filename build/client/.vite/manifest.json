@@ -1,0 +1,107 @@
+{
+  "_chunk-LFPYN7LY-CshaUZlv.js": {
+    "file": "assets/chunk-LFPYN7LY-CshaUZlv.js",
+    "name": "chunk-LFPYN7LY"
+  },
+  "_context-BvAH1NU3.js": {
+    "file": "assets/context-BvAH1NU3.js",
+    "name": "context",
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-CI_c_pG0.js",
+      "_index-Cc67Iszl.js"
+    ]
+  },
+  "_index-ByZCrtLu.js": {
+    "file": "assets/index-ByZCrtLu.js",
+    "name": "index",
+    "imports": [
+      "_index-Cc67Iszl.js",
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "_index-CI_c_pG0.js": {
+    "file": "assets/index-CI_c_pG0.js",
+    "name": "index",
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js"
+    ]
+  },
+  "_index-Cc67Iszl.js": {
+    "file": "assets/index-Cc67Iszl.js",
+    "name": "index",
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "_ru_RU-D30ec6h0.js": {
+    "file": "assets/ru_RU-D30ec6h0.js",
+    "name": "ru_RU",
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js"
+    ]
+  },
+  "src/catchall.tsx?__react-router-build-client-route": {
+    "file": "assets/catchall-hyyj5LRb.js",
+    "name": "catchall",
+    "src": "src/catchall.tsx?__react-router-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js"
+    ]
+  },
+  "src/entry.client.tsx": {
+    "file": "assets/entry.client-D3BJWKor.js",
+    "name": "entry.client",
+    "src": "src/entry.client.tsx",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-CI_c_pG0.js"
+    ],
+    "css": [
+      "assets/entry-CPiF-pRf.css"
+    ]
+  },
+  "src/pages/home.tsx?__react-router-build-client-route": {
+    "file": "assets/home-CotgYtWR.js",
+    "name": "home",
+    "src": "src/pages/home.tsx?__react-router-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_index-ByZCrtLu.js",
+      "_index-Cc67Iszl.js",
+      "_context-BvAH1NU3.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "src/pages/login.tsx?__react-router-build-client-route": {
+    "file": "assets/login-oJZO7hCj.js",
+    "name": "login",
+    "src": "src/pages/login.tsx?__react-router-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_ru_RU-D30ec6h0.js",
+      "_index-ByZCrtLu.js",
+      "_index-Cc67Iszl.js",
+      "_index-CI_c_pG0.js"
+    ]
+  },
+  "src/root.tsx?__react-router-build-client-route": {
+    "file": "assets/root-CuLUhuE6.js",
+    "name": "root",
+    "src": "src/root.tsx?__react-router-build-client-route",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-CshaUZlv.js",
+      "_ru_RU-D30ec6h0.js",
+      "_index-Cc67Iszl.js",
+      "_context-BvAH1NU3.js",
+      "_index-CI_c_pG0.js"
+    ]
+  }
+}

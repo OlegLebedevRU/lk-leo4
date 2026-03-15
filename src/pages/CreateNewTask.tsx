@@ -12,114 +12,18 @@ import {
   ProFormText,
   ProFormTextArea,
 } from '@ant-design/pro-components';
-import { Button, Divider, Form, message, Space } from 'antd';
+import { App, Button, Divider, Form, Space } from 'antd';
 import { useState } from 'react';
-import { axiosPrivate } from '../common/httpPrivate';
+import { fetchTaskDetail } from '../features/tasks/api/tasks';
+import { formatJson, buildPacketPreview, generateExtTaskId, submitTask } from '../features/tasks/domain/taskCreation';
+import type { NewDeviceTaskFormValues } from '../features/tasks/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Тёмная тема, подходящая под ваш стиль
-import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism'; // Светлая тема
-// Добавьте это после импортов, перед типами или функциями
-function formatJson(value: string): string {
-  if (!value.trim()) return value;
-  try {
-    const parsed = JSON.parse(value);
-    return JSON.stringify(parsed, null, 2); // 2 пробела для отступов
-  } catch {
-    // Если JSON невалиден, возвращаем как есть (чтобы не ломать ввод)
-    return value;
-  }
-}
-// === Типы ===
-type DeviceTaskPayload = Record<string, unknown> & {
-  dt: Array<Record<string, unknown>>;
-};
-
-type NewDeviceTask = {
-  ext_task_id: string;
-  device_id: number;
-  method_code: number;
-  priority: number;
-  ttl: number;
-  payload?: DeviceTaskPayload;
-};
-
-type NewDeviceTaskFormValues = Omit<NewDeviceTask, 'payload'> & {
-  payload?: string;
-};
-
+import { materialDark, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 type DetailListProps = {
   device_id: string;
 };
 
 // Для корректной типизации правил валидации
-type Rule = { field: string };
-
-// === Валидация payload ===
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function parsePayload(payloadText: string | undefined): DeviceTaskPayload | undefined {
-  const raw = payloadText?.trim();
-  if (!raw) return undefined;
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error('payload должен быть валидным JSON');
-  }
-
-  if (!isRecord(parsed)) {
-    throw new Error('payload должен быть объектом');
-  }
-
-  const dt = parsed.dt;
-  if (!Array.isArray(dt)) {
-    throw new Error('payload должен содержать массив объектов в поле "dt"');
-  }
-  if (!dt.every(isRecord)) {
-    throw new Error('payload.dt должен быть массивом объектов');
-  }
-
-  return parsed as DeviceTaskPayload;
-}
-
-// === Формирование задачи ===
-function toNewDeviceTaskRequest(values: NewDeviceTaskFormValues): NewDeviceTask {
-  const { payload: payloadText, ...rest } = values;
-  const payload = parsePayload(payloadText);
-  return {
-    ...rest,
-    ...(payload ? { payload } : {}),
-  };
-}
-
-function buildPacketPreview(values: NewDeviceTaskFormValues): string {
-  try {
-    return JSON.stringify(toNewDeviceTaskRequest(values), null, 2);
-  } catch (e) {
-    const errorMessage = e instanceof Error ? e.message : String(e);
-    return JSON.stringify(
-      {
-        ...values,
-        payload_error: errorMessage,
-      },
-      null,
-      2,
-    );
-  }
-}
-
-// === Генерация случайного ext_task_id ===
-function generateExtTaskId(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 20; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 // === Стиль для блока JSON ===
 // const codeBlockStyle = {
@@ -137,6 +41,7 @@ function generateExtTaskId(): string {
 
 // === Компонент ===
 const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
+  const { message } = App.useApp();
   const [form] = Form.useForm<NewDeviceTaskFormValues>();
   const [loadings, setLoadings] = useState<boolean[]>([]);
   const [taskResp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
@@ -186,7 +91,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             priority: 0,
             ttl: 1,
             ext_task_id: generateExtTaskId(),
-            payload: '{"dt": [ {"mt": 0 } ]}',
+            dt: JSON.stringify([{ mt: 0 }], null, 2),
           });
           setTaskResp(undefined);
           setTaskResult(undefined);
@@ -247,17 +152,17 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               max={9999}
             />
           <Divider variant="dashed" style={{ borderColor: '#7cb305' }}>
-            Payload
+            Payload (данные задачи)
           </Divider>
 
 <ProFormTextArea
-  name="payload"
-  label="payload"
-  initialValue={JSON.stringify({ dt: [{ mt: 0 }] }, null, 2)}
+  name="dt"
+  label="dt - массив объектов/строк/чисел"
+  initialValue={JSON.stringify([{ mt: 0 }], null, 2)}
   fieldProps={{
     style: {
-      height: 180,
-      fontSize: 18,
+      height: 120,
+      fontSize: 16,
       fontFamily: 'Consolas, Monaco, "Courier New", monospace',
       whiteSpace: 'pre-wrap',
       wordWrap: 'break-word',
@@ -265,18 +170,24 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
       color: '#dae7f0ff',
       resize: 'vertical',
     },
-    autoSize: { minRows: 6, maxRows: 10 },
+    autoSize: { minRows: 4, maxRows: 8 },
     onChange: (e) => {
       const formatted = formatJson(e.target.value);
-      // Устанавливаем отформатированное значение обратно в поле
-      form.setFieldsValue({ payload: formatted });
+      form.setFieldsValue({ dt: formatted });
     },
   }}
   rules={[
     {
-      validator: async (_rule: Rule, value: string | undefined) => {
+      validator: async (_: any, value: string | undefined) => {
         if (!value?.trim()) return;
-        parsePayload(value);
+        try {
+          const parsed = JSON.parse(value);
+          if (!Array.isArray(parsed)) {
+            throw new Error('dt должен быть массивом');
+          }
+        } catch {
+          throw new Error('dt должен быть валидным JSON-массивом');
+        }
       },
     },
   ]}
@@ -310,7 +221,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   </SyntaxHighlighter>
 </ProForm.Item>
 
-            <Space style={{ marginTop: 12 }} wrap>
+            <Space style={{ marginTop: 12 }} wrap orientation="horizontal">
               <Button
                 type="primary"
                 icon={<SendOutlined />}
@@ -319,9 +230,9 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                   try {
                     enterLoading(3);
                     await form.validateFields();
-                    const task = toNewDeviceTaskRequest(form.getFieldsValue());
-                    const resp = await axiosPrivate.post('/device-tasks/', task);
-                    setTaskResp(resp.data);
+                    const values = form.getFieldsValue();
+                    const resp = await submitTask(values);
+                    setTaskResp(resp);
                     message.success('Задача отправлена');
                   } catch (e) {
                     const errorMsg =
@@ -342,8 +253,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     return;
                   }
                   try {
-                    const resp = await axiosPrivate.get(`/device-tasks/${taskResp.id}`);
-                    setTaskResult(resp.data);
+                    const resp = await fetchTaskDetail(taskResp.id.toString());
+                    setTaskResult(resp);
                     message.success('Результат получен');
                  } catch (e) {
                   const errorMsg = e instanceof Error ? e.message : 'Ошибка при получении результата';
@@ -360,48 +271,45 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             Ответ / Результат
           </Divider>
 
-          <ProDescriptions column={1}>
+          <ProDescriptions column={1} bordered>
             <ProDescriptions.Item label="Ответ сервера">
-  <SyntaxHighlighter
-    language="json"
-     style={vs}
-    customStyle={{
-      margin: 0,
-      fontSize: '12px',
-      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-      padding: '12px',
-      borderRadius: '6px',
-      border: '1px solid #d9d9d9', // Светлая граница для светлого фона
-      overflow: 'auto',
-      maxHeight: '300px',
-      background: '#f5f5f5', // Светлый фон, подходящий под тему vs
-    }}
-  >
-    {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}
-  </SyntaxHighlighter>
-</ProDescriptions.Item>
-          </ProDescriptions>
-
-          <ProDescriptions column={1}>
-           <ProDescriptions.Item label="Результат задачи">
-  <SyntaxHighlighter
-    language="json"
-    // style={vs}
-    customStyle={{
-      margin: 0,
-      fontSize: '12px',
-      fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-      padding: '12px',
-      borderRadius: '6px',
-      border: '1px solid #d9d9d9',
-      overflow: 'auto',
-      maxHeight: '300px',
-      background: '#f5f5f5',
-    }}
-  >
-    {taskResult ? JSON.stringify(taskResult, null, 2) : '—'}
-  </SyntaxHighlighter>
-</ProDescriptions.Item>
+              <SyntaxHighlighter
+                language="json"
+                style={vs}
+                customStyle={{
+                  margin: 0,
+                  fontSize: '12px',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #d9d9d9',
+                  overflow: 'auto',
+                  maxHeight: '300px',
+                  background: '#f5f5f5',
+                }}
+              >
+                {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}
+              </SyntaxHighlighter>
+            </ProDescriptions.Item>
+            <ProDescriptions.Item label="Результат задачи">
+              <SyntaxHighlighter
+                language="json"
+                style={vs}
+                customStyle={{
+                  margin: 0,
+                  fontSize: '12px',
+                  fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  border: '1px solid #d9d9d9',
+                  overflow: 'auto',
+                  maxHeight: '300px',
+                  background: '#f5f5f5',
+                }}
+              >
+                {taskResult ? JSON.stringify(taskResult, null, 2) : '—'}
+              </SyntaxHighlighter>
+            </ProDescriptions.Item>
           </ProDescriptions>
         </ProCard>
       </ProCard>

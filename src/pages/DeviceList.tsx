@@ -6,6 +6,7 @@ import { fetchDevices } from '../features/devices/api/devices';
 import { mapDevicesToListItems } from '../features/devices/domain/deviceMapping';
 import { STATUS_ENUM, type DeviceListItem } from '../features/devices/types';
 import { setApiKey, getApiKey } from '../common/httpPrivate';
+import { Tooltip } from 'antd';
 
 type DeviceListProps = {
   device_id: string;
@@ -34,23 +35,47 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
   };
   const columns: ProColumns<DeviceListItem>[] = [
     {
-      title: '№ (Связь)',
-      key: 'device_id',
-      dataIndex: 'device_id',
-      width: '25%',
-      render: (_, item) => (
-        <Space>
-          <Tag color={item.status === valueEnum[0] ? 'green' : 'red'}>
+    title: '№ (Связь)',
+    key: 'device_id',
+    dataIndex: 'device_id',
+    width: '25%',
+    render: (_, item) => (
+      <Space>
+        <Tooltip
+          title={
+  item.ageSeconds !== undefined
+    ? `Время с последнего обновления: ${Math.floor(item.ageSeconds / 60)} мин ${item.ageSeconds % 60} сек`
+    : 'Нет данных'
+}
+        >
+          <Tag
+            color={item.status === valueEnum[0] ? 'green' : 'red'}
+            style={{
+              border: item.status === valueEnum[0] ? '1px solid #b7eb8f' : '1px solid #ffccc7',
+              width: '14ch',
+            }}
+          >
             <Badge
-              style={{ width: '8ch', fontWeight: 'bold' }}
-              status={item.status}
-              text={item.device_id}
+              style={{
+                fontSize: '12px',
+                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                fontWeight: 'bold',
+                paddingLeft: '4px',
+                paddingRight: '4px',
+              }}
+              status={item.status === valueEnum[0] ? 'success' : 'error'}
+              text={
+                item.device_id != null
+                  ? <span style={{ color: '#000' }}>{String(item.device_id)}</span>
+                  : <span style={{ color: '#000' }}>0</span>
+              }
               title="Состояние связи"
             />
           </Tag>
-        </Space>
-      ),
-    },
+        </Tooltip>
+      </Space>
+    ),
+  },
     {
       title: 'Серийный номер',
       key: 'sn',
@@ -69,7 +94,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
     },
   ];
 
- return (
+  return (
     <div style={{ padding: '16px' }}>
       <div style={{ marginBottom: '16px', padding: '12px', border: '1px solid #d9d9d9', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
         <h3>Настройка доступа</h3>
@@ -99,23 +124,23 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
             const deviceItems: DeviceListItem[] = mapDevicesToListItems(devices);
             return { data: deviceItems, success: true };
           } catch (error: unknown) {
-                let message = 'Ошибка загрузки устройств';
+            let message = 'Ошибка загрузки устройств';
 
-                if (error && typeof error === 'object' && 'response' in error) {
-                    const axiosError = error as { response?: { data?: { message?: string } } };
-                    message = axiosError.response?.data?.message || message;
-                } else if (error instanceof Error) {
-                    message = error.message;
-                }
+            if (error && typeof error === 'object' && 'response' in error) {
+              const axiosError = error as { response?: { data?: { message?: string } } };
+              message = axiosError.response?.data?.message || message;
+            } else if (error instanceof Error) {
+              message = error.message;
+            }
 
-                return {
-                    data: [],
-                    success: false,
-                    errorMessage: message,
-                };
-                }
+            return {
+              data: [],
+              success: false,
+              errorMessage: message,
+            };
+          }
         }}
-        rowKey="device_id"
+        rowKey={(record) => String(record.device_id)}
         search={false}
         pagination={{
           pageSize: 20,
@@ -124,8 +149,8 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange }) => {
         options={{ reload: true }}
         onRow={(record) => ({
           onClick: () => {
-            if (record.device_id) {
-              onChange(record.device_id, record.cmds);
+            if (record.device_id != null) {
+              onChange(String(record.device_id), record.cmds);
             }
           },
         })}

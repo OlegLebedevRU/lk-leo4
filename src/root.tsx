@@ -11,7 +11,7 @@ import ruRU from "antd/locale/ru_RU";
 import { theme } from "antd";
 // src/root.tsx
 export function HydrateFallback() {
-  return <p>Загрузка приложения...</p>;
+  return <p>Loading...</p>;
 }
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

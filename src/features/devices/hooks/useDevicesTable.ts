@@ -20,31 +20,22 @@ export function useDevicesTable(): UseDevicesTableResult {
     setVersion((current) => current + 1);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-
+  const loadDevices = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    try {
+      const devices = await fetchDevices();
+      setData(mapDevicesToListItems(devices));
+    } catch (err) {
+      setError(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-    fetchDevices()
-      .then((devices) => {
-        if (cancelled) return;
-        setData(mapDevicesToListItems(devices));
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err);
-      })
-      .finally(() => {
-        if (cancelled) return;
-        setIsLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [version]);
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices, version]);
 
   return { data, isLoading, error, reload };
 }
-

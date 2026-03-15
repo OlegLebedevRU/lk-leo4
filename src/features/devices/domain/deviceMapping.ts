@@ -81,11 +81,23 @@ function getWsStatus(
   return wsStatus;
 }
 
+function getMinWsAgeSeconds(deviceGauges: DeviceGauges[]): number | undefined {
+  let minAge: number | undefined;
+  deviceGauges.forEach((gauge) => {
+    if (gauge.type === GAUGE_TYPE_WS) {
+      const age = getGaugeAgeSeconds(gauge.updated_at);
+      if (minAge === undefined || age < minAge) minAge = age;
+    }
+  });
+  return minAge;
+}
+
 export function mapDevicesToListItems(devices: DeviceApiResponse[]): DeviceListItem[] {
   return devices.map((device) => {
     const { description, cmds } = buildDescriptionAndCmds(device.device_tags);
     const status = getDeviceStatus(device.connection);
     const active_ws = getWsStatus(device.connection, device.device_gauges);
+    const ageSeconds = getMinWsAgeSeconds(device.device_gauges);  // Новое поле
 
     return {
       device_id: String(device.device_id),
@@ -95,6 +107,7 @@ export function mapDevicesToListItems(devices: DeviceApiResponse[]): DeviceListI
       cmds,
       tags: device.device_tags,
       active_ws,
+      ageSeconds,  // Добавлено
     };
   });
 }

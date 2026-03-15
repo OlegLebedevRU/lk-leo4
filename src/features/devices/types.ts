@@ -45,5 +45,6 @@ export type DeviceListItem = {
   active_ws?: StatusType;
   sip?: string;
   ipc?: string;
+  ageSeconds?: number;  // Время в секундах с последнего обновления WS-gauge
 };
 
