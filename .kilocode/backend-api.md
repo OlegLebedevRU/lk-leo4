@@ -207,14 +207,15 @@ IoT платформа для управления устройствами (п�
 | 1 | pending |
 | 2 | locked |
 | 3 | completed |
-| 4 | failed |
-| 5 | cancelled |
+| 4 | timeouted |
+| 5 | failed |
 
 ## Типы событий (event_type_code)
 
 | Код | Описание |
 |-----|----------|
-| 3 | открытие двери |
+| 3 | ввод идентификатора (сканирование RFID) |
+| 13 | открытие двери |
 | 44 | периодическое событие |
 | ... | см. [eventMapping.ts](src/features/events/domain/eventMapping.ts) |
 
