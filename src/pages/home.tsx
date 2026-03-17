@@ -137,8 +137,9 @@ const Monitoring: React.FC = () => {
     return (
       <ProCard
         title="Сведения об устройстве:"
-        style={{ width: '100%', maxHeight: '70vh' }}
-        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+        className="device-context-card"
+        style={{ width: '100%' }}
+        bodyStyle={{ overflow: 'hidden' }}
       >
         <ProDescriptions layout="vertical">
           <ProDescriptions.Item label={isSoftLoading ? <span>Обновление <span style={{ opacity: 0.5 }}>(фоново)</span></span> : undefined}>
@@ -174,14 +175,14 @@ const Monitoring: React.FC = () => {
         style={vscDarkPlus}
         customStyle={{
           margin: 0,
-          fontSize: '10px', // Совпадает с вашим fieldProps.fontSize
+          fontSize: '10px',
           fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-          color: '#dae7f0ff', // Совпадает с вашим fieldProps.color
-          background: '#0f0e0eff', // Совпадает с вашим fieldProps.backgroundColor
-          padding: '8px', // Небольшой отступ для читаемости
+          color: '#dae7f0ff',
+          background: '#0f0e0eff',
+          padding: '8px',
           borderRadius: '4px',
           overflow: 'auto',
-          maxHeight: '60vh', // Ограничение высоты, чтобы не выходило за пределы карточки
+          maxHeight: 'calc(70vh - 60px)',
         }}
       >
         {renderedContent}
@@ -239,8 +240,12 @@ const Monitoring: React.FC = () => {
   };
 
   return (
-    <ProCard split="vertical" style={{ minHeight: 'calc(100vh - 40px)' }}>
-      <ProCard colSpan="50%">
+    <ProCard 
+      split="vertical" 
+      className="monitoring-card"
+      style={{ minHeight: 'calc(100vh - 40px)' }}
+    >
+      <ProCard colSpan="50%" className="device-list-card">
         <Devicelist
           onChange={handleDeviceChange}
           onRefresh={() => softRefreshDeviceInfo(selectedDevice.deviceId)}

@@ -59,6 +59,197 @@ tr.device-row-selected .ant-tag.ant-tag-red {
 tr.device-row-selected .ant-badge-status-dot {
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3) !important;
 }
+
+/* ============================================
+   МОБИЛЬНАЯ АДАПТАЦИЯ
+   ============================================ */
+
+/* Адаптивная верстка для мобильных устройств */
+@media (max-width: 768px) {
+  /* Уменьшаем отступы контейнера DeviceList */
+  .device-list-container {
+    padding: 8px !important;
+    margin-left: -8px;
+  }
+  
+  /* Убираем отступы у ProTable */
+  .device-list-container .ant-pro-table {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Компактные отступы внутри таблицы */
+  .device-list-container .ant-table-cell {
+    padding: 8px 4px !important;
+  }
+  
+  /* Уменьшаем размер шрифта в ячейках */
+  .device-list-container .ant-table-cell,
+  .device-list-container .ant-tag {
+    font-size: 12px;
+  }
+  
+  /* Компактный заголовок таблицы */
+  .device-list-container .ant-table-thead > tr > th {
+    padding: 10px 4px !important;
+    font-size: 12px;
+  }
+  
+  /* Компактный Tag в колонке Связь */
+  .device-list-container .ant-tag {
+    margin: 0;
+    padding: 2px 4px;
+  }
+  
+  /* Уменьшаем Badge */
+  .device-list-container .ant-badge {
+    font-size: 11px;
+  }
+  
+  .device-list-container .ant-badge-status-text {
+    font-size: 11px;
+  }
+  
+  /* Компактная строка таблицы */
+  .device-list-container .ant-table-tbody > tr > td {
+    padding: 6px 4px !important;
+  }
+  
+  /* Адаптивный ProCard - только список на весь экран */
+  .ant-pro-card-col .ant-card {
+    margin: 0;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+/* Еще более компактные стили для маленьких экранов */
+@media (max-width: 480px) {
+  .device-list-container .ant-table-thead > tr > th,
+  .device-list-container .ant-table-tbody > tr > td,
+  .device-list-container .ant-table-cell {
+    padding: 4px 2px !important;
+  }
+  
+  .device-list-container .ant-tag {
+    width: auto !important;
+    min-width: 30px;
+    font-size: 10px;
+  }
+  
+  .device-list-container .ant-badge-status-text {
+    font-size: 10px;
+  }
+}
+
+/* ============================================
+   АДАПТАЦИЯ МОНИТОРИНГА (home.tsx)
+   ============================================ */
+
+/* ProCard контейнер мониторинга */
+.monitoring-card > .ant-card-body {
+  padding: 0;
+}
+
+/* На мобильных - полный список устройств */
+@media (max-width: 768px) {
+  .monitoring-card {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .monitoring-card .ant-pro-card-col {
+    width: 100% !important;
+    flex: none;
+  }
+  
+  /* Левая колонка (список устройств) - полная ширина */
+  .device-list-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+  
+  .device-list-card > .ant-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  
+  /* Уменьшаем gap между колонками */
+  .monitoring-card .ant-pro-card-col + .ant-pro-card-col {
+    margin-left: 0;
+  }
+  
+  /* Уменьшаем отступы в заголовке ProTable */
+  .device-list-container .ant-pro-card .ant-pro-card-head {
+    padding: 8px 12px;
+    min-height: auto;
+  }
+  
+  .device-list-container .ant-pro-card .ant-pro-card-head-title {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  /* Компактный toolbar */
+  .device-list-container .ant-pro-card .ant-pro-card-extra {
+    padding: 0;
+  }
+}
+
+/* На очень маленьких экранах - правая панель внизу */
+@media (max-width: 576px) {
+  .monitoring-card {
+    flex-direction: column;
+  }
+  
+  .monitoring-card .ant-pro-card-col:nth-child(2) {
+    width: 100% !important;
+    display: block !important;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+  
+  .monitoring-card .ant-pro-card-col:nth-child(2) > .ant-card {
+    height: auto;
+    min-height: 300px;
+  }
+}
+
+/* ============================================
+   ИСПРАВЛЕНИЕ ПРОКРУТКИ СВЕДЕНИЙ ОБ УСТРОЙСТВЕ
+   ============================================ */
+
+/* Контекстная карточка устройства */
+.device-context-card > .ant-card-body {
+  padding: 0;
+  overflow: hidden;
+}
+
+.device-context-card .ant-pro-descriptions {
+  margin: 0;
+}
+
+/* SyntaxHighlighter контейнер */
+.device-context-card .ant-syntax-highlighter-wrapper {
+  margin: 0 !important;
+  border-radius: 0;
+}
+
+.device-context-card .ant-syntax-highlighter-wrapper pre {
+  margin: 0 !important;
+  border-radius: 0 !important;
+  max-height: calc(100vh - 180px) !important;
+  overflow: auto !important;
+}
+
+/* Правильный box-sizing для скроллбаров */
+.device-context-card * {
+  box-sizing: border-box;
+}
 /* 
 a {
   font-weight: 500;

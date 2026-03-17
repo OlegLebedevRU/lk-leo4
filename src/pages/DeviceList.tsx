@@ -40,6 +40,9 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
+  // Определение мобильного устройства
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 576;
+
   // Обновляем текущее время каждую секунду для пересчета ageSeconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -277,7 +280,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
   };
 
   return (
-    <div style={{ padding: '16px' }}>
+    <div className="device-list-container" style={{ padding: isMobile ? '8px' : '16px' }}>
       {/* Форма ввода API key - только в dev режиме */}
       {config.isDev && (
         <Collapse
@@ -341,7 +344,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
         search={false}
         scroll={{ x: 'max-content' }}
         pagination={{
-          pageSize: 20,
+          pageSize: isMobile ? 10 : 20,
           showSizeChanger: false,
           // Блокируем пагинацию при ошибке API
           disabled: hasApiError,
@@ -349,7 +352,14 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
           total: lastKnownDevices.length,
           showTotal: (total: number) => `Всего: ${total}`,
         }}
-        options={{ reload: true }}
+        options={isMobile ? false : { reload: true }}
+        toolbar={{
+          actions: isMobile ? [
+            <Button key="reload" type="text" size="small" icon={<Button icon={<>↻</>} />} onClick={() => actionRef.current?.reload()}>
+              Обновить
+            </Button>
+          ] : undefined,
+        }}
         rowClassName={(record) => String(record.device_id) === selectedDeviceId ? 'device-row-selected' : ''}
         onRow={(record) => ({
           onClick: () => {
