@@ -12,22 +12,10 @@ axios.defaults.withCredentials = true;  // Использовать cookies
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// Интерцептор запроса: добавляем API-ключ и проверяем авторизацию
+// Интерцептор запроса: просто логируем запрос
 axios.interceptors.request.use(
   (config) => {
     console.log('AXIOS REQUEST:', config.method?.toUpperCase(), config.url);
-    
-    // Пробуем получить токен из localStorage (куда его сохранил login)
-    const apiKey = localStorage.getItem('api-key');
-    if (apiKey) {
-      config.headers['X-Api-Key'] = apiKey;
-    }
-    
-    // Также пробуем из localStorage под другим ключом
-    const accessToken = localStorage.getItem('accessToken');
-    if (accessToken) {
-      config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
     
     // Токен в HttpOnly cookie - браузер отправляет автоматически
     config.withCredentials = true;
@@ -125,18 +113,3 @@ axios.interceptors.response.use(
 );
 
 export const axiosPrivate = axios;
-
-// Экспортируем функцию для установки ключа
-export const setApiKey = (key: string) => {
-  localStorage.setItem("api-key", key);
-};
-
-// Экспортируем функцию для получения ключа
-export const getApiKey = (): string => {
-  return localStorage.getItem("api-key") || "";
-};
-
-// Экспортируем функцию для удаления ключа (логаут)
-export const clearApiKey = () => {
-  localStorage.removeItem("api-key");
-};

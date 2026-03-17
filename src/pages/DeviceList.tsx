@@ -1,12 +1,10 @@
 // src/pages/DeviceList.tsx
 import { ProTable, type ProColumns, type ActionType } from '@ant-design/pro-components';
-import { Badge, Button, Input, Space, Tag, Alert, Collapse } from 'antd';
+import { Badge, Button, Space, Tag, Alert } from 'antd';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchDevices } from '../features/devices/api/devices';
 import { mapDevicesToListItems } from '../features/devices/domain/deviceMapping';
 import { STATUS_ENUM, type DeviceListItem } from '../features/devices/types';
-import { setApiKey, getApiKey } from '../common/httpPrivate';
-import { config } from '../common/config';
 import { Tooltip } from 'antd';
 
 type DeviceListProps = {
@@ -28,10 +26,6 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
   const actionRef = useRef<ActionType>(null);
   const isInitialLoad = useRef(true);
 
-  // ✅ Ленивая инициализация — нет нужды в useEffect!
-  const [apiKey, setLocalKey] = useState<string>(() => getApiKey());
-  const [error, setError] = useState<string | null>(null);
-  
   // Состояние для отслеживания потери связи с API
   const [hasApiError, setHasApiError] = useState<boolean>(false);
   const [lastKnownDevices, setLastKnownDevices] = useState<DeviceWithBaseAge[]>([]);
@@ -82,20 +76,6 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
         : undefined
     }));
   }, [lastKnownDevices, currentTime, fetchTime]);
-
-  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLocalKey(e.target.value);
-  };
-
-  const saveApiKey = () => {
-    if (!apiKey.trim()) {
-      setError("API-ключ не может быть пустым");
-      return;
-    }
-    setError(null);
-    setApiKey(apiKey); // Сохраняем в localStorage
-    window.location.reload(); // Чтобы новые запросы пошли с ключом
-  };
 
   // Функция для получения цвета иконки
   const getBadgeStatus = (status: string | undefined, isApiError: boolean): 'success' | 'error' | 'default' => {
@@ -281,44 +261,6 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
 
   return (
     <div className="device-list-container" style={{ padding: isMobile ? '8px' : '16px' }}>
-      {/* Форма ввода API key - только в dev режиме */}
-      {config.isDev && (
-        <Collapse
-          ghost
-          items={[
-            {
-              key: '1',
-              label: (
-                <span>
-                  Настройка доступа {hasApiError && <Badge status="error" />}
-                  {!hasApiError && apiKey && <Badge status="success" />}
-                </span>
-              ),
-              children: (
-                <div style={{ padding: '0 0 8px 0' }}>
-                  <Space orientation="vertical" style={{ width: '100%' }}>
-                    <Input.Password
-                      placeholder="Введите X-Api-Key"
-                      value={apiKey}
-                      onChange={handleApiKeyChange}
-                      size="large"
-                    />
-                    {error && <Alert message={error} type="error" showIcon />}
-                    <Button type="primary" onClick={saveApiKey}>
-                      Сохранить ключ
-                    </Button>
-                  </Space>
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-                    Ключ сохраняется в браузере. Используется для всех запросов.
-                  </div>
-                </div>
-              ),
-            },
-          ]}
-          defaultActiveKey={apiKey && !hasApiError ? [] : ['1']}
-        />
-      )}
-
       {/* Показываем ошибку API если есть */}
       {hasApiError && errorMessage && (
         <Alert 
