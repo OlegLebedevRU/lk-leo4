@@ -1,17 +1,35 @@
 // src/common/httpPrivate.ts
 import axios from "axios";
-import { memoizedRefreshToken } from "./httpRefreshToken";
+import { config as appConfig } from "./config";
+import { refreshToken } from "./httpRefreshToken";
 
-// Базовая настройка без X-Api-Key /test
-axios.defaults.baseURL = "https://dev.leo4.ru/api/v1";
+// Базовая настройка без X-Api-Key
+axios.defaults.baseURL = appConfig.apiV1Url;
 axios.defaults.headers.common["Content-Type"] = "application/json";
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = true;  // Использовать cookies
 
-// Интерцептор запроса: добавляем API-ключ, если есть
+// Глобальный флаг - идёт ли сейчас рефреш
+let isRefreshing = false;
+let refreshPromise: Promise<boolean> | null = null;
+
+// Интерцептор запроса: добавляем API-ключ и проверяем авторизацию
 axios.interceptors.request.use(
   (config) => {
-    const apiKey = localStorage.getItem("api-key") || "";
-    config.headers["X-Api-Key"] = apiKey;
+    console.log('AXIOS REQUEST:', config.method?.toUpperCase(), config.url);
+    
+    // Пробуем получить токен из localStorage (куда его сохранил login)
+    const apiKey = localStorage.getItem('api-key');
+    if (apiKey) {
+      config.headers['X-Api-Key'] = apiKey;
+    }
+    
+    // Также пробуем из localStorage под другим ключом
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      config.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
+    // Токен в HttpOnly cookie - браузер отправляет автоматически
     config.withCredentials = true;
     return config;
   },
@@ -22,17 +40,86 @@ axios.interceptors.request.use(
 axios.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const config = error?.config;
-
+    const originalRequest = error.config;
+    
+    // Если нет ответа (CORS или ошибка сети)
     if (!error.response) {
       console.error('CORS or network error:', error.message);
-    } else if (error.response.status === 401 && !config?.sent) {
-      config.sent = true;
-      const result = await memoizedRefreshToken();
-      if (result) {
-        return axios(config);
+      return Promise.reject(error);
+    }
+    
+    const status = error.response.status;
+    const contentType = error.response.headers?.['content-type'] || '';
+    
+    console.warn('AXIOS ERROR:', status, 'content-type:', contentType);
+    
+    // Если 401 - пробуем рефреш
+    if (status === 401) {
+      // НЕ пытаемся рефрешить для самого refresh endpoint
+      if (originalRequest.url?.includes('/refresh/')) {
+        console.log('Refresh endpoint returned 401 - no valid refresh token, redirecting to /login');
+        window.location.href = '/login?from=refresh';
+        return Promise.reject(error);
+      }
+      
+      // Если уже рефрешим - ждём результата
+      if (isRefreshing && refreshPromise) {
+        console.log('Already refreshing, waiting for result...');
+        const success = await refreshPromise;
+        if (success) {
+          return axios(originalRequest);
+        } else {
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+      }
+      
+      // Проверяем, не делали ли мы уже рефреш для этого запроса
+      if (!originalRequest._retry) {
+        originalRequest._retry = true;
+        isRefreshing = true;
+        
+        console.warn('AXIOS 401 - TRYING REFRESH');
+        
+        refreshPromise = (async () => {
+          try {
+            // Пытаемся обновить токен
+            const refreshSuccess = await refreshToken();
+            
+            if (refreshSuccess) {
+              console.log('Token refreshed successfully');
+            } else {
+              console.log('Token refresh failed');
+            }
+            return refreshSuccess;
+          } catch (refreshError) {
+            console.error('Error during token refresh:', refreshError);
+            return false;
+          } finally {
+            isRefreshing = false;
+            refreshPromise = null;
+          }
+        })();
+        
+        const refreshSuccess = await refreshPromise;
+        
+        if (refreshSuccess) {
+          console.log('Retrying request after refresh');
+          return axios(originalRequest);
+        } else {
+          console.log('Refresh failed, redirecting to /login');
+          window.location.href = '/login';
+          return Promise.reject(error);
+        }
+      } else {
+        console.log('Already retried, redirecting to /login');
+        window.location.href = '/login';
+        return Promise.reject(error);
       }
     }
+    
+    // Другие ошибки - редирект
+    window.location.href = '/login';
     return Promise.reject(error);
   }
 );
@@ -47,4 +134,9 @@ export const setApiKey = (key: string) => {
 // Экспортируем функцию для получения ключа
 export const getApiKey = (): string => {
   return localStorage.getItem("api-key") || "";
+};
+
+// Экспортируем функцию для удаления ключа (логаут)
+export const clearApiKey = () => {
+  localStorage.removeItem("api-key");
 };

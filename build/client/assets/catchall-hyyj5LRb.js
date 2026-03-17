@@ -1,1 +1,0 @@
-import{w as s,v as t,o as r}from"./chunk-LFPYN7LY-CshaUZlv.js";const c=s(function(){const o=t();return console.error(o),r.jsxs("div",{style:{padding:20},children:[r.jsx("h2",{children:"404"}),r.jsx("p",{children:"Страница не найдена"})]})});export{c as default};

@@ -134,6 +134,7 @@ return (
                 showSizeChanger: false,
                 showLessItems: false,
                 showTitle: false,
+                showTotal: (total: number) => `Всего: ${total}`,
 
             }}
         toolBarRender={() => [

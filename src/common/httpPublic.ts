@@ -1,7 +1,9 @@
+// src/common/httpPublic.ts
 import axios from "axios";
+import { config } from "./config";
 
 export const axiosPublic = axios.create({
-  baseURL: "https://dev.leo4.ru/public",
+  baseURL: config.publicApiUrl,
   headers: {
     "Content-Type": "application/json",
   },

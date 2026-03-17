@@ -1,11 +1,12 @@
 // src/pages/DeviceList.tsx
 import { ProTable, type ProColumns, type ActionType } from '@ant-design/pro-components';
-import { Badge, Button, Input, Space, Tag, Alert } from 'antd';
+import { Badge, Button, Input, Space, Tag, Alert, Collapse } from 'antd';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { fetchDevices } from '../features/devices/api/devices';
 import { mapDevicesToListItems } from '../features/devices/domain/deviceMapping';
 import { STATUS_ENUM, type DeviceListItem } from '../features/devices/types';
 import { setApiKey, getApiKey } from '../common/httpPrivate';
+import { config } from '../common/config';
 import { Tooltip } from 'antd';
 
 type DeviceListProps = {
@@ -37,6 +38,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [fetchTime, setFetchTime] = useState<number>(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
   // Обновляем текущее время каждую секунду для пересчета ageSeconds
   useEffect(() => {
@@ -130,6 +132,12 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
     title: '№ (Связь)',
     key: 'device_id',
     dataIndex: 'device_id',
+    sorter: (a, b) => {
+      const aId = Number(a.device_id) || 0;
+      const bId = Number(b.device_id) || 0;
+      return aId - bId;
+    },
+    defaultSortOrder: 'ascend',
     render: (_, item) => {
       const isGreen = item.status === valueEnum[0];
       const tagStyle = getTagStyle(item.status, hasApiError);
@@ -156,7 +164,7 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
                 style={{
                   fontSize: '12px',
                   fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                  fontWeight: 'bold',
+                  fontWeight: 'normal',
                   paddingLeft: '4px',
                   paddingRight: '4px',
                 }}
@@ -175,12 +183,24 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
     },
   },
     {
-      title: 'Серийный номер',
+      title: 'SN',
       key: 'sn',
       dataIndex: 'sn',
-      render: (_, item) => (
-        <Tag color="blue">{item.sn}</Tag>
-      ),
+      render: (_, item) => {
+        const sn = String(item.sn || '');
+        const displaySn = sn.length > 10 ? sn.substring(0, 10) + '...' : sn;
+        return (
+          <Tooltip title={<span style={{ cursor: 'pointer' }} onClick={() => navigator.clipboard.writeText(sn)}>{sn} (нажмите для копирования)</span>}>
+            <Tag color="blue">{displaySn}</Tag>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: 'APP',
+      key: 'app',
+      dataIndex: 'app',
+      ellipsis: true,
     },
     {
       title: 'Описание',
@@ -258,24 +278,43 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
 
   return (
     <div style={{ padding: '16px' }}>
-      <div style={{ marginBottom: '16px', padding: '12px', border: '1px solid #d9d9d9', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-        <h3>Настройка доступа</h3>
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Input.Password
-            placeholder="Введите X-Api-Key"
-            value={apiKey}
-            onChange={handleApiKeyChange}
-            size="large"
-          />
-          {error && <Alert message={error} type="error" showIcon />}
-          <Button type="primary" onClick={saveApiKey}>
-            Сохранить ключ
-          </Button>
-        </Space>
-        <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-          Ключ сохраняется в браузере. Используется для всех запросов.
-        </div>
-      </div>
+      {/* Форма ввода API key - только в dev режиме */}
+      {config.isDev && (
+        <Collapse
+          ghost
+          items={[
+            {
+              key: '1',
+              label: (
+                <span>
+                  Настройка доступа {hasApiError && <Badge status="error" />}
+                  {!hasApiError && apiKey && <Badge status="success" />}
+                </span>
+              ),
+              children: (
+                <div style={{ padding: '0 0 8px 0' }}>
+                  <Space orientation="vertical" style={{ width: '100%' }}>
+                    <Input.Password
+                      placeholder="Введите X-Api-Key"
+                      value={apiKey}
+                      onChange={handleApiKeyChange}
+                      size="large"
+                    />
+                    {error && <Alert message={error} type="error" showIcon />}
+                    <Button type="primary" onClick={saveApiKey}>
+                      Сохранить ключ
+                    </Button>
+                  </Space>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                    Ключ сохраняется в браузере. Используется для всех запросов.
+                  </div>
+                </div>
+              ),
+            },
+          ]}
+          defaultActiveKey={apiKey && !hasApiError ? [] : ['1']}
+        />
+      )}
 
       {/* Показываем ошибку API если есть */}
       {hasApiError && errorMessage && (
@@ -306,11 +345,16 @@ const DeviceList: React.FC<DeviceListProps> = ({ onChange, onRefresh, onAfterRef
           showSizeChanger: false,
           // Блокируем пагинацию при ошибке API
           disabled: hasApiError,
+          // Русская локализация
+          total: lastKnownDevices.length,
+          showTotal: (total: number) => `Всего: ${total}`,
         }}
         options={{ reload: true }}
+        rowClassName={(record) => String(record.device_id) === selectedDeviceId ? 'device-row-selected' : ''}
         onRow={(record) => ({
           onClick: () => {
             if (record.device_id != null) {
+              setSelectedDeviceId(String(record.device_id));
               onChange(String(record.device_id), record.cmds);
             }
           },

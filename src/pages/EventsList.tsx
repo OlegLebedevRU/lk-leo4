@@ -215,6 +215,7 @@ const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
         showSizeChanger: false,
         showLessItems: false,
         showTitle: false,
+        showTotal: (total: number) => `Всего: ${total}`,
       }}
       rowKey="createdAt"
       search={false}

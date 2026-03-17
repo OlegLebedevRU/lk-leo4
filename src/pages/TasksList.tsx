@@ -278,6 +278,7 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
       pagination={{
         pageSize: 10,
         showSizeChanger: false,
+        showTotal: (total: number) => `Всего: ${total}`,
       }}
       toolBarRender={() => [<NewTask device_id={device_id} key="new-task" />]}
       style={{ background: '#fff' }} // ← светлый фон

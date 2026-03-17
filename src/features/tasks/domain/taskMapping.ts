@@ -108,8 +108,8 @@ export function parsePayload(payloadText: string | undefined): DeviceTaskPayload
 }
 
 export function toNewDeviceTaskRequest(values: NewDeviceTaskFormValues): NewDeviceTask {
-  const { payload: payloadText, ...rest } = values;
-  const payload = parsePayload(payloadText);
+  const { dt: dtString, ...rest } = values;
+  const payload = parsePayload(dtString);
   return {
     ...rest,
     ...(payload ? { payload } : {}),

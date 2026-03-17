@@ -1,0 +1,179 @@
+customModes:
+  - slug: auth-check
+    name: Проверка авторизации
+    description: Добавить редирект на /login при отсутствии токена
+    roleDefinition: >-
+      Режим для реализации проверки авторизации в React-приложении с React Router.
+      Включает знания о:
+      - Защите маршрутов (Protected Routes)
+      - Работе с токенами в localStorage
+      - Интерцепторах Axios для обработки 401
+      - Паттерне редиректа на страницу логина
+    whenToUse: >-
+      Используйте этот режим когда нужно:
+      - Защитить маршруты от неавторизованного доступа
+      - Добавить редирект на /login при отсутствии токена
+      - Обработать 401 ошибки от API с редиректом на логин
+      - Реализовать логаут с очисткой токена
+    groups:
+      - read
+      - edit
+      - command
+    customInstructions: |
+      Ключевые файлы:
+      - src/entry.client.tsx - точка входа, BrowserRouter
+      - src/components/ProtectedRoute.tsx - компонент защиты маршрутов
+      - src/common/httpPrivate.ts - Axios интерцепторы, обработка 401
+      - src/pages/loginApp.tsx - форма логина, сохранение токена
+      
+      Реализация ProtectedRoute:
+      1. Создать компонент в src/components/ProtectedRoute.tsx
+      2. Импортировать getApiKey из httpPrivate
+      3. Проверить токен и путь, вернуть Navigate при необходимости
+      
+      Интеграция в entry.client.tsx:
+      import { ProtectedRoute } from "./components/ProtectedRoute";
+      
+      <BrowserRouter>
+        <ProtectedRoute>
+          <AppRoutes />
+        </ProtectedRoute>
+      </BrowserRouter>
+      
+      Обработка 401 в httpPrivate.ts:
+      - При 401 попробовать refresh token
+      - Если не удалось -> window.location.href = '/login'
+      
+      Обработка логина в loginApp.tsx:
+      - При успехе: setApiKey(token) -> редирект
+      
+      Обработка логаута:
+      - clearApiKey() -> редирект на /login
+      
+      Функции для токена:
+      - getApiKey() -> чтение из localStorage
+      - setApiKey(key) -> запись в localStorage
+      - clearApiKey() -> удаление из localStorage
+
+  - slug: deploy
+    name: Деплой и инфраструктура
+    description: Деплой фронтенда, nginx, SSH/SCP команды
+    roleDefinition: >-
+      Режим для деплоя React-приложения на удалённый сервер.
+      Включает знания о:
+      - Vite сборке (build)
+      - Docker и docker-compose
+      - Nginx конфигурации для SPA
+      - SSH/SCP командах для PowerShell
+    whenToUse: >-
+      Используйте этот режим когда нужно:
+      - Собрать и задеплоить фронтенд
+      - Настроить nginx для SPA
+      - Подключиться к удалённому серверу по SSH
+      - Скопировать файлы на сервер
+    groups:
+      - read
+      - edit
+      - command
+    customInstructions: |
+      === Структура проекта ===
+      - vite.config.ts - конфигурация Vite
+      - package.json - скрипты build и deploy
+      - deploy.ps1 - PowerShell скрипт деплоя
+      - dist/ - собранные файлы после npm run build
+      
+      === Vite конфигурация (vite.config.ts) ===
+      Проект использует Vite с react-router.
+      SSR отключён (ssr: false) - это SPA приложение.
+      
+      Ключевые настройки:
+      - build.outDir: 'dist' - директория для билда
+      - base: '/' - базовый путь (для корня домена)
+      
+      === Сборка и деплой ===
+      
+      Локальная сборка:
+      npm run build
+      
+      Деплой (PowerShell):
+      powershell -ExecutionPolicy Bypass -File deploy.ps1
+      
+      Скрипт deploy.ps1:
+      1. Запускает npm run build
+      2. Копирует файлы в dist/login/index.html (для /login роута)
+      3. Загружает на сервер через SCP
+      
+      === Nginx конфигурация ===
+      
+      Основные правила для SPA:
+      - try_files $uri /index.html - для SPA роутинга
+      - /login - особый роут с собственным index.html
+      
+      Пример location для SPA:
+      location / {
+        auth_jwt_enabled off;
+        root /var/share/nginx/html;
+        try_files $uri /index.html;
+      }
+      
+      === SSH команды (PowerShell) ===
+      
+      Подключение к серверу:
+      ssh user1@dev.leo4.ru
+      
+      Выполнить команду на сервере:
+      ssh user1@dev.leo4.ru "docker-compose restart nginx"
+      
+      Перезапуск контейнера:
+      ssh user1@dev.leo4.ru "docker-compose restart nginx"
+      
+      === SCP команды (PowerShell) ===
+      
+      Загрузить файл на сервер:
+      scp dist/index.html user1@dev.leo4.ru:/var/share/nginx/html/
+      
+      Загрузить директорию:
+      scp -r dist/* user1@dev.leo4.ru:/var/share/nginx/html/
+      
+      Скачать файл с сервера:
+      scp user1@dev.leo4.ru:/var/share/nginx/html/index.html ./
+      
+      === Docker-compose ===
+      
+      Основные команды:
+      docker-compose ps - статус контейнеров
+      docker-compose logs nginx - логи nginx
+      docker-compose restart nginx - перезапуск nginx
+      docker-compose exec nginx nginx -T - посмотреть конфиг
+      
+      === React Router ===
+      
+      Файл: src/routes.ts
+      - Определяет все маршруты приложения
+      - Используется в entry.client.tsx через useRoutes()
+      
+      Пример роута:
+      { path: '/', element: <Home /> },
+      { path: '/login', element: <Login /> },
+      
+      === Важные файлы ===
+      - src/entry.client.tsx - точка входа (hydrates React на клиенте)
+      - src/root.tsx - корневой компонент с Layout
+      - src/routes.ts - определение маршрутов
+      - src/common/config.ts - конфигурация API
+      - src/common/httpPrivate.ts - axios с интерцепторами
+      - src/common/httpPublic.ts - публичный axios без токена
+      
+      === Локализация (antd) ===
+      
+      Для русского языка используется:
+      import ruRU from 'antd/locale/ru_RU';
+      
+      <ConfigProvider locale={ruRU}>
+        <App />
+      </ConfigProvider>
+      
+      В root.tsx уже настроено:
+      <ConfigProvider locale={ruRU} theme={{ algorithm: theme.compactAlgorithm }}>
+        <AntdApp>{children}</AntdApp>
+      </ConfigProvider>

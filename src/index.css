@@ -22,6 +22,43 @@
 .ant-table-row-expand-icon::after {
   background-color: #000 !important;
 }
+
+/* Выделение выбранной строки в списке устройств */
+tr.device-row-selected td {
+  background-color: rgba(24, 144, 255, 0.1) !important;
+}
+
+tr.device-row-selected:hover td {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+}
+
+/* Явное указание для ячейки таблицы */
+tr.device-row-selected > td.ant-table-cell {
+  background-color: rgba(24, 144, 255, 0.1) !important;
+}
+
+/* Выделение Tag в колонке Связь при выборе устройства */
+tr.device-row-selected .ant-tag {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+  border-color: rgba(24, 144, 255, 0.3) !important;
+}
+
+tr.device-row-selected .ant-tag.ant-tag-green {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+  border-color: rgba(24, 144, 255, 0.3) !important;
+  color: #389e0d !important;
+}
+
+tr.device-row-selected .ant-tag.ant-tag-red {
+  background-color: rgba(24, 144, 255, 0.15) !important;
+  border-color: rgba(24, 144, 255, 0.3) !important;
+  color: #cf1322 !important;
+}
+
+/* Сохраняем оригинальный цвет Badge */
+tr.device-row-selected .ant-badge-status-dot {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.3) !important;
+}
 /* 
 a {
   font-weight: 500;

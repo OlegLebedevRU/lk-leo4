@@ -39,6 +39,7 @@ export type DeviceListItem = {
   device_id?: DeviceId;
   sn?: number | string;
   name?: number | string;
+  app?: number | string;
   status: StatusType;
   tags?: DeviceTag[];
   cmds?: string;

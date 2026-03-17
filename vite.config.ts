@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
-//import react from '@vitejs/plugin-react'
-import { reactRouter } from "@react-router/dev/vite";
+import react from '@vitejs/plugin-react'
 
-export default defineConfig(
- {
-  build:{ ssr: false},
-  plugins: [reactRouter()],
+export default defineConfig({
+  build: { 
+    outDir: './dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+  },
+  plugins: [react()],
+  publicDir: 'public',
 })

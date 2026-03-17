@@ -1,107 +1,104 @@
 {
-  "_chunk-LFPYN7LY-CshaUZlv.js": {
-    "file": "assets/chunk-LFPYN7LY-CshaUZlv.js",
+  "_chunk-LFPYN7LY-Bi2G5YgM.js": {
+    "file": "assets/chunk-LFPYN7LY-Bi2G5YgM.js",
     "name": "chunk-LFPYN7LY"
   },
-  "_index-CI_c_pG0.js": {
-    "file": "assets/index-CI_c_pG0.js",
-    "name": "index",
+  "_config-XpewbTqc.js": {
+    "file": "assets/config-XpewbTqc.js",
+    "name": "config",
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js"
+      "_index-Dv3iGEjM.js",
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_index-wobZFY13.js"
     ]
   },
-  "_index-DROAJ9eZ.js": {
-    "file": "assets/index-DROAJ9eZ.js",
+  "_index-B1mA0_5j.js": {
+    "file": "assets/index-B1mA0_5j.js",
     "name": "index",
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_index-Dv3iGEjM.js",
+      "_index-wobZFY13.js"
     ]
   },
-  "_index-DpoXb2Az.js": {
-    "file": "assets/index-DpoXb2Az.js",
+  "_index-Dv3iGEjM.js": {
+    "file": "assets/index-Dv3iGEjM.js",
     "name": "index",
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-DROAJ9eZ.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_index-wobZFY13.js"
     ]
   },
-  "_index-PBY61rzc.js": {
-    "file": "assets/index-PBY61rzc.js",
+  "_index-wobZFY13.js": {
+    "file": "assets/index-wobZFY13.js",
     "name": "index",
     "imports": [
-      "_index-DROAJ9eZ.js",
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js"
     ]
   },
-  "_ru_RU-D30ec6h0.js": {
-    "file": "assets/ru_RU-D30ec6h0.js",
+  "_ru_RU-CJbYOspl.js": {
+    "file": "assets/ru_RU-CJbYOspl.js",
     "name": "ru_RU",
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js"
+    ]
+  },
+  "node_modules/@react-router/dev/dist/config/defaults/entry.client.tsx": {
+    "file": "assets/entry.client-B1wfu9ch.js",
+    "name": "entry.client",
+    "src": "node_modules/@react-router/dev/dist/config/defaults/entry.client.tsx",
+    "isEntry": true,
+    "imports": [
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_index-wobZFY13.js"
     ]
   },
   "src/catchall.tsx?__react-router-build-client-route": {
-    "file": "assets/catchall-hyyj5LRb.js",
+    "file": "assets/catchall-CnZihv7B.js",
     "name": "catchall",
     "src": "src/catchall.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js"
-    ]
-  },
-  "src/entry.client.tsx": {
-    "file": "assets/entry.client-D3BJWKor.js",
-    "name": "entry.client",
-    "src": "src/entry.client.tsx",
-    "isEntry": true,
-    "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-CI_c_pG0.js"
-    ],
-    "css": [
-      "assets/entry-CPiF-pRf.css"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js"
     ]
   },
   "src/pages/home.tsx?__react-router-build-client-route": {
-    "file": "assets/home-BB4_r5zm.js",
+    "file": "assets/home-HmV8oo2k.js",
     "name": "home",
     "src": "src/pages/home.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_index-PBY61rzc.js",
-      "_index-DROAJ9eZ.js",
-      "_index-DpoXb2Az.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_config-XpewbTqc.js",
+      "_index-Dv3iGEjM.js",
+      "_index-B1mA0_5j.js",
+      "_index-wobZFY13.js"
     ]
   },
   "src/pages/login.tsx?__react-router-build-client-route": {
-    "file": "assets/login-D7wO5n0I.js",
+    "file": "assets/login-APKofq6f.js",
     "name": "login",
     "src": "src/pages/login.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_ru_RU-D30ec6h0.js",
-      "_index-PBY61rzc.js",
-      "_index-DROAJ9eZ.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_ru_RU-CJbYOspl.js",
+      "_config-XpewbTqc.js",
+      "_index-Dv3iGEjM.js",
+      "_index-wobZFY13.js"
     ]
   },
   "src/root.tsx?__react-router-build-client-route": {
-    "file": "assets/root-SYBsWEhR.js",
+    "file": "assets/root-vwuP7MlK.js",
     "name": "root",
     "src": "src/root.tsx?__react-router-build-client-route",
     "isEntry": true,
     "imports": [
-      "_chunk-LFPYN7LY-CshaUZlv.js",
-      "_ru_RU-D30ec6h0.js",
-      "_index-DROAJ9eZ.js",
-      "_index-DpoXb2Az.js",
-      "_index-CI_c_pG0.js"
+      "_chunk-LFPYN7LY-Bi2G5YgM.js",
+      "_ru_RU-CJbYOspl.js",
+      "_index-Dv3iGEjM.js",
+      "_index-B1mA0_5j.js",
+      "_index-wobZFY13.js"
     ]
   }
 }

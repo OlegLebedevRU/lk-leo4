@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>lk-leo4</title>
+    <script>
+      // Проверяем авторизацию до загрузки React
+      // Если сервер возвращает 401 - сразу редирект на /login
+      (function() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/api/v1/devices/?device_id=0', false); // Синхронный запрос
+        xhr.withCredentials = true;
+        try {
+          xhr.send();
+          if (xhr.status === 401) {
+            window.location.href = '/login';
+          }
+        } catch(e) {
+          // Игнорируем ошибки сети - React загрузится и обработает
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/entry.client.tsx"></script>
+  </body>
+</html>

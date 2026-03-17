@@ -16,11 +16,13 @@ import {
 type DescriptionAndCmds = {
   description: string;
   cmds: string;
+  app: string;
 };
 
 function buildDescriptionAndCmds(tags: DeviceTag[]): DescriptionAndCmds {
   let description = '';
   let cmds = '';
+  let app = '';
 
   tags.forEach((val) => {
     if (!val) {
@@ -31,10 +33,12 @@ function buildDescriptionAndCmds(tags: DeviceTag[]): DescriptionAndCmds {
       description = description.concat(' ', val.value);
     } else if (val.tag === 'cmd') {
       cmds = cmds.concat(' ', val.value);
+    } else if (val.tag === 'app') {
+      app = val.value;
     }
   });
 
-  return { description, cmds };
+  return { description, cmds, app };
 }
 
 function getDeviceStatus(connection: DeviceApiResponse['connection']): StatusType {
@@ -94,7 +98,7 @@ function getMinWsAgeSeconds(deviceGauges: DeviceGauges[]): number | undefined {
 
 export function mapDevicesToListItems(devices: DeviceApiResponse[]): DeviceListItem[] {
   return devices.map((device) => {
-    const { description, cmds } = buildDescriptionAndCmds(device.device_tags);
+    const { description, cmds, app } = buildDescriptionAndCmds(device.device_tags);
     const status = getDeviceStatus(device.connection);
     const active_ws = getWsStatus(device.connection, device.device_gauges);
     const ageSeconds = getMinWsAgeSeconds(device.device_gauges);  // Новое поле
@@ -103,6 +107,7 @@ export function mapDevicesToListItems(devices: DeviceApiResponse[]): DeviceListI
       device_id: String(device.device_id),
       sn: device.sn,
       name: description,
+      app: app,
       status,
       cmds,
       tags: device.device_tags,
