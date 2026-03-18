@@ -13,12 +13,13 @@ export const tasksKeys = {
 };
 
 // Хук для получения списка задач устройства
-export function useTasks(deviceId: string) {
+export function useTasks(deviceId: string, options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: tasksKeys.list(deviceId),
     queryFn: () => fetchTasks(deviceId),
     enabled: !!deviceId,
     staleTime: 1000 * 30,
+    refetchInterval: options?.refetchInterval,
   });
 }
 

@@ -1,7 +1,7 @@
 // import '@ant-design/v5-patch-for-react-19';
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { LoginForm, ProFormCheckbox, ProFormText } from "@ant-design/pro-components";
-import { Space } from "antd";
+import { Space, Button } from "antd";
 import React, { useState } from 'react';
 import { Navigate } from 'react-router';
 import { axiosPublic } from '../common/httpPublic';
@@ -42,9 +42,17 @@ const Login: React.FC = () => {
         </div>
         <LoginForm
           submitter={{
-            submitButtonProps: {
-              children: 'Войти',
-              style: { width: '100%' }
+            render: (form) => {
+              return [
+                <Button
+                  type="primary"
+                  key="submit"
+                  style={{ width: '100%' }}
+                  onClick={() => form?.submit()}
+                >
+                  Войти
+                </Button>
+              ];
             },
           }}
           actions={<Space />}

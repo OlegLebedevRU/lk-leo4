@@ -6,7 +6,7 @@ import { fetchTaskDetail } from '../features/tasks/api/tasks';
 import { mapTasksToListItems, mapApiResponseToFullTaskDetail } from '../features/tasks/domain/taskMapping';
 import { getStatusTag } from '../features/tasks/domain/statusMapping';
 import type { TaskListItem, FullTaskDetail } from '../features/tasks/types';
-import { useState, type Key } from 'react';
+import { useState, type Key, useCallback } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -16,13 +16,22 @@ type DetailListProps = {
   device_id: string;
 };
 
+const AUTOREFRESH_INTERVAL = 60000; // 1 минута
+
 const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
   const [expandedRowKeys, setExpandedRowKeys] = useState<Key[]>([]);
   const [loadingRows, setLoadingRows] = useState<Record<string, boolean>>({});
   const [taskDetails, setTaskDetails] = useState<Record<string, FullTaskDetail>>({});
 
-  // Используем React Query хук
-  const { data, isLoading, isError, error, refetch } = useTasks(device_id);
+  // Используем React Query хук с автообновлением
+  const { data, isLoading, isError, error, refetch } = useTasks(device_id, {
+    refetchInterval: AUTOREFRESH_INTERVAL,
+  });
+
+  // Функция для принудительного обновления
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const loadTaskDetail = async (taskId: string, poll = false) => {
     if (loadingRows[taskId]) return;
@@ -284,6 +293,12 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
         total: data?.total || 0,
         showSizeChanger: false,
         showTotal: (total: number) => `Всего: ${total}`,
+      }}
+      options={{
+        reload: () => {
+          handleRefresh();
+          return Promise.resolve();
+        },
       }}
       toolBarRender={() => [<NewTask device_id={device_id} key="new-task" />]}
       style={{ background: '#fff' }}
