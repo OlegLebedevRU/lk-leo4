@@ -35,9 +35,15 @@ export const config = {
   
   // URL для API v1
   apiV1Url: urls.apiV1Url,
+
+  // Sitekey для Яндекс Капчи
+  captchaSitekey: "ysc1_VbSsmUimGfekCT8aaUV3FLdYszcXiqThvipST2X67ad609f0",
   
   // Флаг режима разработки
   isDev,
+
+  // Включить тестовый режим капчи (не требует загрузки скрипта)
+  captchaTestMode: isDev,
 } as const;
 
 export type Config = typeof config;

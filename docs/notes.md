@@ -18,10 +18,34 @@ PowerShell:
 powershell -ExecutionPolicy Bypass -File deploy.ps1
 ```
 
-Скрипт deploy.ps1:
+**Скрипт deploy.ps1 (полный деплой с билдом):**
 1. Запускает `npm run build`
-2. Копирует `dist/index.html` в `dist/login/index.html` (для /login роута)
+2. Проверяет наличие index.html
+3. **Проверяет конфигурацию nginx** через `docker compose exec nginx nginx -T`
+4. При наличии `try_files ... index.html` в конфиге - НЕ создаёт login/index.html
+5. При отсутствии try_files - создаёт login/index.html для совместимости
+6. Копирует favicon.svg в dist
+7. Загружает файлы на сервер через SCP
+
+**Скрипт deploy-upload.ps1 (только аплоад, без билда):**
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy-upload.ps1
+```
+1. Проверяет dist папку
+2. **Проверяет конфигурацию nginx** аналогично deploy.ps1
 3. Загружает файлы на сервер через SCP
+4. Перезапускает nginx контейнер
+
+#### Логика проверки nginx
+
+Скрипты проверяют конфигурацию nginx для определения SPA-совместимости:
+
+```powershell
+ssh -i "d:\.ssh\free-tier-cloud_ru" user1@176.108.247.249 "cd /home/user1/iot-rpc-rest-app && sudo docker compose exec nginx nginx -T"
+```
+
+- Если найден `try_files $uri $uri/ /index.html` → маршрутизация работает на стороне клиента, login/index.html не нужен
+- Если конфиг не содержит try_files → создаётся login/index.html для совместимости
 
 ### SSH команды (PowerShell)
 

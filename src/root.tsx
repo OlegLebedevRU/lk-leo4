@@ -10,6 +10,25 @@ import { App as AntdApp, ConfigProvider } from "antd";
 import ruRU from "antd/locale/ru_RU";
 import { ProConfigProvider, ruRUIntl } from "@ant-design/pro-components";
 import { theme } from "antd";
+import React, { Suspense, useState, useEffect } from "react";
+
+// ClientOnly - рендерит контент только на клиенте
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    // Используем requestAnimationFrame для избежания двойного рендера
+    requestAnimationFrame(() => {
+      setMounted(true);
+    });
+  }, []);
+  
+  if (!mounted) {
+    return null;
+  }
+  
+  return <>{children}</>;
+}
 
 // src/root.tsx
 export function HydrateFallback() {
@@ -40,7 +59,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function Root() {
   return (
     <Layout>
-      <Outlet />
+      <Suspense fallback={<HydrateFallback />}>
+        <ClientOnly>
+          <Outlet />
+        </ClientOnly>
+      </Suspense>
     </Layout>
   );
 }

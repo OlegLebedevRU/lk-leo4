@@ -4,9 +4,11 @@ import { LoginForm, ProConfigProvider, ProFormCheckbox, ProFormText, createIntl 
 import { theme, Space, ConfigProvider } from "antd";
 import ruRU from 'antd/locale/ru_RU';
 import ruRUPro from '@ant-design/pro-provider/lib/locale/ru_RU';
-import React from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router';
 import { axiosPublic } from '../common/httpPublic';
+import { config } from '../common/config';
+import { SmartCaptcha } from '@yandex/smart-captcha';
 
 // Создаём intl для pro-components
 const ruRUIntl = createIntl('ru_RU', ruRUPro);
@@ -15,6 +17,7 @@ const Login: React.FC = () => {
   console.log("Login: rendering");
   const { token } = theme.useToken();
   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>('');
   const authOn = () => setIsAuthenticated(true);
 
   console.log("Login: isAuthenticated =", isAuthenticated);
@@ -43,11 +46,18 @@ const Login: React.FC = () => {
               console.log(values, encodedCredentials);
               
               try {
+                // Проверяем, что капча пройдена
+                if (!captchaToken) {
+                  console.error('Капча не пройдена');
+                  return;
+                }
+
                 // Отправляем запрос с Basic Auth
                 // Токены приходят в httpOnly cookies - браузер автоматически их сохранит
                 await axiosPublic.get('/login/', {
                   headers: {
                     Authorization: `Basic ${encodedCredentials}`,
+                    'Smart-Captcha-Token': captchaToken,
                   },
                   withCredentials: true,  // Важно: принимать cookies от сервера
                 });
@@ -56,7 +66,7 @@ const Login: React.FC = () => {
                 authOn();
               } catch (error) {
                 console.error('Login failed:', error);
-                // Можно добавить отображение ошибки пользователю
+                // Капча остаётся как есть, пользователь может обновить страницу
               }
             }}
           >
@@ -130,6 +140,16 @@ const Login: React.FC = () => {
               >
                 Оферта
               </a>
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <SmartCaptcha
+                  sitekey={config.captchaSitekey}
+                  onSuccess={setCaptchaToken}
+                  language="ru"
+                  test={config.captchaTestMode}
+                />
+              </div>
             </div>
           </LoginForm>
         </div>

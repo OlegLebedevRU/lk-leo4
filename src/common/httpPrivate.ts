@@ -106,8 +106,8 @@ axios.interceptors.response.use(
       }
     }
     
-    // Другие ошибки - редирект
-    window.location.href = '/login';
+    // Другие ошибки - не редиректим, а возвращаем ошибку для обработки в компоненте
+    // window.location.href = '/login';
     return Promise.reject(error);
   }
 );

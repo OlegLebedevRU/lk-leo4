@@ -10,7 +10,7 @@
       // Если сервер возвращает 401 - сразу редирект на /login
       (function() {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/api/v1/devices/?device_id=0', false); // Синхронный запрос
+        xhr.open('GET', '/api/jwt/v1/devices/?device_id=0', false); // Синхронный запрос
         xhr.withCredentials = true;
         try {
           xhr.send();
@@ -24,7 +24,7 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" suppressHydrationWarning></div>
     <script type="module" src="/src/entry.client.tsx"></script>
   </body>
 </html>

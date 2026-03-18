@@ -14,6 +14,7 @@
     "@ant-design/icons": "^6.1.0",
     "@ant-design/pro-components": "^2.8.10",
     "@ant-design/pro-provider": "^2.16.2",
+    "@yandex/smart-captcha": "2.9.1",
     "antd": "^6.3.0",
     "axios": "^1.13.6",
     "react": "^19.2.0",

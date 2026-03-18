@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 build
+docs/react.md
+docs/keys.md
+docs/widget-methods.md
+src/common/captcha.py
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

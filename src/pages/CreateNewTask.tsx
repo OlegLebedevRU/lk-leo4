@@ -1,4 +1,4 @@
-import {
+﻿import {
   DownloadOutlined,
   PlusOutlined,
   SendOutlined,
@@ -92,7 +92,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
           const config = getMethodCodeConfig(defaultMethodCode);
           const defaultDtValues: Record<string, unknown> = {};
           if (config) {
-            config.dtFields.forEach(field => {
+            // dtFields может быть undefined для method_code=21 (dtFormat: "empty")
+            config.dtFields?.forEach(field => {
               defaultDtValues[field.fieldName] = field.defaultValue;
             });
             // Для поддержки множественных объектов
@@ -173,7 +174,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                   const config = getMethodCodeConfig(value as number);
                   if (config) {
                     const defaultValues: Record<string, unknown> = {};
-                    config.dtFields.forEach(field => {
+                    // dtFields может быть undefined для method_code=21 (dtFormat: "empty")
+                    config.dtFields?.forEach(field => {
                       defaultValues[field.fieldName] = field.defaultValue;
                     });
                     // Для поддержки множественных объектов
@@ -202,7 +204,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             if (!config) return null;
             
             // Для метода с пустым dt (например, method_code=21)
-            if (config.dtFields.length === 0) {
+            if (!config.dtFields || config.dtFields.length === 0) {
               return (
                 <div style={{ marginBottom: 16, color: '#888', fontSize: 12 }}>
                   {config.description}
@@ -433,8 +435,16 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     setTaskResp(resp);
                     message.success('Задача отправлена');
                   } catch (e) {
-                    const errorMsg =
-                      e instanceof Error ? e.message : 'Не удалось отправить задачу';
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const err = e as any;
+                    let errorMsg = 'Не удалось отправить задачу';
+                    if (err.response?.data?.message) {
+                      errorMsg = err.response.data.message;
+                    } else if (err.response?.data?.error) {
+                      errorMsg = String(err.response.data.error);
+                    } else if (err.message) {
+                      errorMsg = err.message;
+                    }
                     message.error(errorMsg);
                   }
                 }}
@@ -516,3 +526,5 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
 };
 
 export default NewTask;
+
+

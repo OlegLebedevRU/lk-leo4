@@ -1,7 +1,6 @@
 // entry.client.tsx
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, useRoutes } from "react-router-dom";
-import React from "react";
 import "./index.css";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import Login from "./pages/login";
@@ -46,11 +45,9 @@ const root = createRoot(container);
 console.log("Entry client: calling render");
 
 root.render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ProtectedRoute>
-        <AppRoutes />
-      </ProtectedRoute>
-    </BrowserRouter>
-  </React.StrictMode>
+  <BrowserRouter>
+    <ProtectedRoute>
+      <AppRoutes />
+    </ProtectedRoute>
+  </BrowserRouter>
 );
