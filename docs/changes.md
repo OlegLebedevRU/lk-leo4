@@ -1,5 +1,59 @@
 # История изменений
 
+## 2026-03-18 - Рефакторинг React Router v7
+
+### Проблема
+- Дублирование маршрутов: `routes.ts` не использовался, маршруты были в `entry.client.tsx`
+- Установлен лишний пакет `react-router-dom` (в v7 используется только `react-router`)
+- ProtectedRoute был нефункционален - просто рендерил children
+- `window.location.href` использовался для редиректов (полная перезагрузка страницы)
+
+### Решение
+Упрощение архитектуры React Router для CSR SPA.
+
+### Изменения
+
+#### package.json
+- Удалён `react-router-dom` из зависимостей
+
+#### src/entry.client.tsx
+- Использует `createBrowserRouter` из `react-router`
+- Lazy loading страниц через `React.lazy`
+- Импорты `AuthHandler` и `PageLoader`
+
+#### src/components/AuthHandler.tsx
+- **Создан** - обработчик 401 редиректов на /login
+
+#### src/components/PageLoader.tsx
+- **Создан** - компонент индикатора загрузки
+
+#### src/components/ProtectedRoute.tsx
+- Удалён (был нефункционален)
+
+#### src/common/httpPrivate.ts
+- Убраны `window.location.href` редиректы
+- При 401 ошибке просто возвращает Promise.reject
+
+#### src/Layout.tsx
+- Удалена обёртка `ClientOnly`
+
+#### src/catchall.tsx
+- Изменён импорт: `react-router-dom` → `react-router`
+
+#### vite.config.ts
+- Убран `react-router-dom` из `manualChunks`
+
+#### docs/notes.md
+- Обновлена документация React Router
+
+### Результат
+- Размер бандла `vendor-react`: ~180KB → ~95KB (gzip: 32KB)
+- Упрощённая архитектура маршрутизации
+- Корректная обработка 401 без полной перезагрузки страницы
+- Нет eslint warnings
+
+---
+
 ## 2026-03-17 - Улучшение безопасности авторизации
 
 ### Проблема

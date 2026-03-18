@@ -141,16 +141,16 @@ const Login: React.FC = () => {
                 Оферта
               </a>
             </div>
-            <div style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <SmartCaptcha
-                  sitekey={config.captchaSitekey}
-                  onSuccess={setCaptchaToken}
-                  language="ru"
-                  test={config.captchaTestMode}
-                />
-              </div>
+           <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <SmartCaptcha
+                sitekey={config.captchaSitekey}
+                onSuccess={setCaptchaToken}
+                language="ru"
+                test={config.captchaTestMode}
+              />
             </div>
+          </div>
           </LoginForm>
         </div>
       </ProConfigProvider>

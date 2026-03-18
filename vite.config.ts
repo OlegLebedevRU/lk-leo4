@@ -11,7 +11,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
+          'vendor-react': ['react', 'react-dom', 'react-router'],
           'vendor-antd': ['antd', '@ant-design/icons', '@ant-design/pro-components', '@ant-design/pro-provider'],
           'vendor-utils': ['axios', 'react-syntax-highlighter'],
         },

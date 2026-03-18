@@ -160,46 +160,57 @@ export default defineConfig({
 
 ### React Router
 
-Файл: `src/routes.ts`
+Файл: `src/entry.client.tsx`
 
 ```typescript
-export const routes: RouteObject[] = [
-  { path: '/', element: <Home /> },
-  { path: '/login', element: <Login /> },
-  { path: '/devices', element: <DeviceList /> },
-  { path: '/tasks', element: <TasksList /> },
-  { path: '/events', element: <EventsList /> },
-];
+import { createBrowserRouter } from 'react-router';
+
+// Lazy-loaded страницы
+const HomePage = React.lazy(() => import("./pages/home"));
+const LoginPage = React.lazy(() => import("./pages/login"));
+
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    path: "/",
+    element: <HomePage />,
+  },
+  {
+    path: "*",
+    element: <CatchAll />,
+  },
+]);
 ```
 
-Использование в `entry.client.tsx`:
+Использование:
 
 ```typescript
-import { useRoutes } from 'react-router-dom';
-import { routes } from './routes';
+import { RouterProvider } from 'react-router';
 
-function AppRoutes() {
-  const element = useRoutes(routes);
-  return element;
-}
+<RouterProvider router={router} />
 ```
+
+**Примечание:** В React Router v7 используется только пакет `react-router` (не `react-router-dom`).
 
 ### Архитектура приложения
 
 ```
 src/
-├── entry.client.tsx    # Точка входа (hydrates React)
-├── root.tsx            # Корневой компонент с Layout
-├── routes.ts           # Определение маршрутов
-├── catchall.tsx        # Catch-all для SPA
+├── entry.client.tsx    # Точка входа (createRoot + RouterProvider)
+├── entry.html          # HTML шаблон
+├── routes.ts           # Конфигурация маршрутов (backup)
+├── Layout.tsx          # Основной layout с antd
+├── catchall.tsx        # Catch-all для 404
 ├── common/
 │   ├── config.ts       # Конфигурация API
 │   ├── httpPrivate.ts # Axios с интерцепторами, 401 обработка
 │   ├── httpPublic.ts   # Публичный axios без токена
 │   └── httpRefreshToken.ts # Обновление токена
-├── components/
-│   └── ProtectedRoute.tsx # Защита маршрутов
 └── pages/
+    ├── login.tsx       # Lazy-обёртка для loginApp
     ├── loginApp.tsx    # Форма логина
     ├── home.tsx        # Главная страница
     ├── DeviceList.tsx  # Список устройств
@@ -213,13 +224,13 @@ src/
 
 Токен хранится в HttpOnly cookie (недоступен для JavaScript).
 
-Проверка аврутентификации:
+Проверка авторизации:
 - На уровне nginx через `auth_jwt`
-- При 401 от API -> редирект на /login
+- При 401 от API -> обрабатывается в httpPrivate.ts -> редирект на /login
 
 Файлы:
 - `src/common/httpPrivate.ts` - интерцептор для 401
-- `src/components/ProtectedRoute.tsx` - проверка маршрутов
+- `src/entry.client.tsx` - AuthHandler для редиректов
 - `src/pages/loginApp.tsx` - форма логина
 
 ---

@@ -1,53 +1,29 @@
-// entry.client.tsx
+// entry.client.tsx - Использует React Router v7
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, useRoutes } from "react-router-dom";
+import { RouterProvider, createBrowserRouter } from "react-router";
 import "./index.css";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import Login from "./pages/login";
-import Home from "./pages/home";
+import React, { Suspense } from "react";
+import { AuthHandler } from "./components/AuthHandler";
+import { PageLoader } from "./components/PageLoader";
 
-// Static routes (no lazy loading for debugging)
-const routes = [
-  {
-    path: "/",
-    Component: Home,
-  },
-  {
-    path: "/login",
-    Component: Login,
-  },
-  {
-    path: "*",
-    Component: Home,
-  },
-];
+// Lazy-loaded страницы
+const HomePage = React.lazy(() => import("./pages/home"));
+const LoginPage = React.lazy(() => import("./pages/login"));
+const CatchAll = React.lazy(() => import("./catchall"));
 
-// Component that renders routes
-export function AppRoutes() {
-  console.log("AppRoutes: rendering, pathname =", window.location.pathname);
-  const element = useRoutes(routes);
-  console.log("AppRoutes: element =", element);
-  return element;
-}
+// Определяем маршруты
+const router = createBrowserRouter([
+  { path: "/login", element: <Suspense fallback={<PageLoader />}><LoginPage /></Suspense> },
+  { path: "/", element: <Suspense fallback={<PageLoader />}><HomePage /></Suspense> },
+  { path: "*", element: <Suspense fallback={<PageLoader />}><CatchAll /></Suspense> },
+]);
 
 const container = document.getElementById("root");
+if (!container) throw new Error("Root element not found");
 
-console.log("Entry client: container =", container);
-
-if (!container) {
-  throw new Error("Root element not found");
-}
-
-console.log("Entry client: calling createRoot");
-
-const root = createRoot(container);
-
-console.log("Entry client: calling render");
-
-root.render(
-  <BrowserRouter>
-    <ProtectedRoute>
-      <AppRoutes />
-    </ProtectedRoute>
-  </BrowserRouter>
+createRoot(container).render(
+  <React.StrictMode>
+    <AuthHandler />
+    <RouterProvider router={router} />
+  </React.StrictMode>
 );

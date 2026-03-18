@@ -1,5 +1,5 @@
 // src/catchall.tsx
-import { useRouteError } from "react-router-dom";
+import { useRouteError } from "react-router";
 
 export default function CatchAll() {
   const error = useRouteError();

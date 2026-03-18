@@ -45,8 +45,8 @@ axios.interceptors.response.use(
     if (status === 401) {
       // НЕ пытаемся рефрешить для самого refresh endpoint
       if (originalRequest.url?.includes('/refresh/')) {
-        console.log('Refresh endpoint returned 401 - no valid refresh token, redirecting to /login');
-        window.location.href = '/login?from=refresh';
+        console.log('Refresh endpoint returned 401 - no valid refresh token');
+        // Не редиректим - предоставим AuthHandler обработать
         return Promise.reject(error);
       }
       
@@ -57,7 +57,6 @@ axios.interceptors.response.use(
         if (success) {
           return axios(originalRequest);
         } else {
-          window.location.href = '/login';
           return Promise.reject(error);
         }
       }
@@ -95,19 +94,16 @@ axios.interceptors.response.use(
           console.log('Retrying request after refresh');
           return axios(originalRequest);
         } else {
-          console.log('Refresh failed, redirecting to /login');
-          window.location.href = '/login';
+          console.log('Refresh failed');
           return Promise.reject(error);
         }
       } else {
-        console.log('Already retried, redirecting to /login');
-        window.location.href = '/login';
+        console.log('Already retried');
         return Promise.reject(error);
       }
     }
     
     // Другие ошибки - не редиректим, а возвращаем ошибку для обработки в компоненте
-    // window.location.href = '/login';
     return Promise.reject(error);
   }
 );
