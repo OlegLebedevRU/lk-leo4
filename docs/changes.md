@@ -57,6 +57,17 @@
 - Теперь проверка 401 обрабатывается в AuthHandler
 - Синхронный XHR блокировал UI и создавал лишнюю нагрузку на сервер
 
+#### react-router.config.ts
+- Удалён (не используется при CSR с Vite)
+
+#### src/entry.html
+- Удалён (не используется при CSR с Vite)
+
+#### package.json
+- Удалён `@react-router/dev` из devDependencies
+- Изменён скрипт `dev`: `react-router dev` → `vite dev`
+- antd: 6.x → 5.21.6 (совместимость с @ant-design/pro-components)
+
 ---
 
 ## 2026-03-17 - Улучшение безопасности авторизации

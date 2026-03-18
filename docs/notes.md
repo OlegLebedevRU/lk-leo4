@@ -164,24 +164,19 @@ export default defineConfig({
 
 ```typescript
 import { createBrowserRouter } from 'react-router';
+import { Suspense } from 'react';
 
 // Lazy-loaded страницы
 const HomePage = React.lazy(() => import("./pages/home"));
 const LoginPage = React.lazy(() => import("./pages/login"));
+const CatchAll = React.lazy(() => import("./catchall"));
+
+const PageLoader = () => <div>Загрузка...</div>;
 
 const router = createBrowserRouter([
-  {
-    path: "/login",
-    element: <LoginPage />,
-  },
-  {
-    path: "/",
-    element: <HomePage />,
-  },
-  {
-    path: "*",
-    element: <CatchAll />,
-  },
+  { path: "/login", element: <Suspense fallback={<PageLoader />}><LoginPage /></Suspense> },
+  { path: "/", element: <Suspense fallback={<PageLoader />}><HomePage /></Suspense> },
+  { path: "*", element: <Suspense fallback={<PageLoader />}><CatchAll /></Suspense> },
 ]);
 ```
 
@@ -199,11 +194,12 @@ import { RouterProvider } from 'react-router';
 
 ```
 src/
-├── entry.client.tsx    # Точка входа (createRoot + RouterProvider)
-├── entry.html          # HTML шаблон
-├── routes.ts           # Конфигурация маршрутов (backup)
+├── entry.client.tsx    # Точка входа (createRoot + RouterProvider + createBrowserRouter)
 ├── Layout.tsx          # Основной layout с antd
 ├── catchall.tsx        # Catch-all для 404
+├── components/
+│   ├── AuthHandler.tsx # Обработчик 401 редиректов
+│   └── PageLoader.tsx  # Индикатор загрузки
 ├── common/
 │   ├── config.ts       # Конфигурация API
 │   ├── httpPrivate.ts # Axios с интерцепторами, 401 обработка
@@ -226,7 +222,7 @@ src/
 
 Проверка авторизации:
 - На уровне nginx через `auth_jwt`
-- При 401 от API -> обрабатывается в httpPrivate.ts -> редирект на /login
+- При 401 от API -> обрабатывается в AuthHandler -> редирект на /login
 
 Файлы:
 - `src/common/httpPrivate.ts` - интерцептор для 401

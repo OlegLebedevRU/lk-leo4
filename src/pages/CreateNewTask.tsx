@@ -421,7 +421,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   </SyntaxHighlighter>
 </ProForm.Item>
 
-            <Space style={{ marginTop: 12 }} wrap orientation="horizontal">
+            <Space style={{ marginTop: 12 }} wrap>
               <Button
                 type="primary"
                 icon={<SendOutlined />}

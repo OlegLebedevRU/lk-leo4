@@ -6,7 +6,7 @@ customModes:
       Режим для реализации проверки авторизации в React-приложении с React Router.
       Включает знания о:
       - Защите маршрутов (Protected Routes)
-      - Работе с токенами в localStorage
+      - Работе с HttpOnly куками
       - Интерцепторах Axios для обработки 401
       - Паттерне редиректа на страницу логина
     whenToUse: >-
@@ -21,39 +21,35 @@ customModes:
       - command
     customInstructions: |
       Ключевые файлы:
-      - src/entry.client.tsx - точка входа, BrowserRouter
-      - src/components/ProtectedRoute.tsx - компонент защиты маршрутов
-      - src/common/httpPrivate.ts - Axios интерцепторы, обработка 401
-      - src/pages/loginApp.tsx - форма логина, сохранение токена
+      - src/entry.client.tsx - точка входа, RouterProvider, AuthHandler
+      - src/components/AuthHandler.tsx - обработчик 401 редиректов
+      - src/components/PageLoader.tsx - индикатор загрузки
+      - src/common/httpPrivate.ts - Axios интерцепторы, обработка 401 и refresh
+      - src/common/httpRefreshToken.ts - обновление токена
+      - src/pages/loginApp.tsx - форма логина
       
-      Реализация ProtectedRoute:
-      1. Создать компонент в src/components/ProtectedRoute.tsx
-      2. Импортировать getApiKey из httpPrivate
-      3. Проверить токен и путь, вернуть Navigate при необходимости
+      Токены хранятся в HttpOnly куках (недоступны для JavaScript).
+      
+      Реализация AuthHandler (src/components/AuthHandler.tsx):
+      1. Создать компонент с useEffect
+      2. Добавить интерцептор axios для обработки 401
+      3. При 401 -> window.location.href = '/login'
       
       Интеграция в entry.client.tsx:
-      import { ProtectedRoute } from "./components/ProtectedRoute";
+      import { AuthHandler } from "./components/AuthHandler";
       
-      <BrowserRouter>
-        <ProtectedRoute>
-          <AppRoutes />
-        </ProtectedRoute>
-      </BrowserRouter>
+      <RouterProvider router={router}>
+        <AuthHandler />
+      </RouterProvider>
       
       Обработка 401 в httpPrivate.ts:
       - При 401 попробовать refresh token
-      - Если не удалось -> window.location.href = '/login'
+      - Если refresh не удался -> вернуть Promise.reject
+      - AuthHandler обрабатывает редирект
       
       Обработка логина в loginApp.tsx:
-      - При успехе: setApiKey(token) -> редирект
-      
-      Обработка логаута:
-      - clearApiKey() -> редирект на /login
-      
-      Функции для токена:
-      - getApiKey() -> чтение из localStorage
-      - setApiKey(key) -> запись в localStorage
-      - clearApiKey() -> удаление из localStorage
+      - При успехе сервер отдаёт токены в HttpOnly куках
+      - authOn() -> редирект на главную страницу
 
   - slug: deploy
     name: Деплой и инфраструктура
@@ -83,12 +79,13 @@ customModes:
       - dist/ - собранные файлы после npm run build
       
       === Vite конфигурация (vite.config.ts) ===
-      Проект использует Vite с react-router.
-      SSR отключён (ssr: false) - это SPA приложение.
+      Проект использует Vite с React Router v7.
+      SPA режим (CSR) - без SSR.
       
       Ключевые настройки:
       - build.outDir: 'dist' - директория для билда
       - base: '/' - базовый путь (для корня домена)
+      - manualChunks: разбиение на vendor-react, vendor-antd, vendor-utils
       
       === Сборка и деплой ===
       
@@ -100,14 +97,15 @@ customModes:
       
       Скрипт deploy.ps1:
       1. Запускает npm run build
-      2. Копирует файлы в dist/login/index.html (для /login роута)
-      3. Загружает на сервер через SCP
+      2. Проверяет конфигурацию nginx
+      3. Копирует файлы в dist (включая login/index.html если нужно)
+      4. Загружает на сервер через SCP
       
       === Nginx конфигурация ===
       
       Основные правила для SPA:
       - try_files $uri /index.html - для SPA роутинга
-      - /login - особый роут с собственным index.html
+      - withCredentials: true - для отправки кук
       
       Пример location для SPA:
       location / {
@@ -122,10 +120,10 @@ customModes:
       ssh user1@dev.leo4.ru
       
       Выполнить команду на сервере:
-      ssh user1@dev.leo4.ru "docker-compose restart nginx"
+      ssh user1@dev.leo4.ru "docker compose restart nginx"
       
       Перезапуск контейнера:
-      ssh user1@dev.leo4.ru "docker-compose restart nginx"
+      ssh user1@dev.leo4.ru "docker compose restart nginx"
       
       === SCP команды (PowerShell) ===
       
@@ -138,31 +136,38 @@ customModes:
       Скачать файл с сервера:
       scp user1@dev.leo4.ru:/var/share/nginx/html/index.html ./
       
-      === Docker-compose ===
+      === Docker ===
       
       Основные команды:
-      docker-compose ps - статус контейнеров
-      docker-compose logs nginx - логи nginx
-      docker-compose restart nginx - перезапуск nginx
-      docker-compose exec nginx nginx -T - посмотреть конфиг
+      docker compose ps - статус контейнеров
+      docker compose logs nginx - логи nginx
+      docker compose restart nginx - перезапуск nginx
+      docker compose exec nginx nginx -T - посмотреть конфиг
       
-      === React Router ===
+      === React Router v7 ===
       
-      Файл: src/routes.ts
-      - Определяет все маршруты приложения
-      - Используется в entry.client.tsx через useRoutes()
+      Файл: src/entry.client.tsx
+      - Использует createBrowserRouter для определения маршрутов
+      - Lazy loading страниц через React.lazy
+      - Suspense для отображения индикатора загрузки
       
       Пример роута:
-      { path: '/', element: <Home /> },
-      { path: '/login', element: <Login /> },
+      const router = createBrowserRouter([
+        { path: "/login", element: <LoginPage /> },
+        { path: "/", element: <HomePage /> },
+        { path: "*", element: <CatchAll /> },
+      ]);
       
       === Важные файлы ===
-      - src/entry.client.tsx - точка входа (hydrates React на клиенте)
-      - src/root.tsx - корневой компонент с Layout
-      - src/routes.ts - определение маршрутов
+      - src/entry.client.tsx - точка входа (createRoot + RouterProvider)
+      - src/Layout.tsx - основной layout с antd
+      - src/catchall.tsx - обработчик 404
+      - src/components/AuthHandler.tsx - обработчик 401 редиректов
+      - src/components/PageLoader.tsx - индикатор загрузки
       - src/common/config.ts - конфигурация API
       - src/common/httpPrivate.ts - axios с интерцепторами
       - src/common/httpPublic.ts - публичный axios без токена
+      - src/common/httpRefreshToken.ts - обновление токена
       
       === Локализация (antd) ===
       
@@ -173,7 +178,9 @@ customModes:
         <App />
       </ConfigProvider>
       
-      В root.tsx уже настроено:
+      В Layout.tsx уже настроено:
       <ConfigProvider locale={ruRU} theme={{ algorithm: theme.compactAlgorithm }}>
-        <AntdApp>{children}</AntdApp>
+        <ProConfigProvider intl={ruRUIntl}>
+          <AntdApp>{children}</AntdApp>
+        </ProConfigProvider>
       </ConfigProvider>
