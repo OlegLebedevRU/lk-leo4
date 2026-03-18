@@ -1,6 +1,7 @@
 // src/common/httpRefreshToken.ts
 import axios from "axios";
 import { config } from "./config";
+import { getCsrfToken, CSRF_HEADER } from "./csrf";
 
 // Флаг для предотвращения множественных одновременных попыток рефреша
 let isRefreshing = false;
@@ -15,8 +16,6 @@ const refreshTokenFn = async (): Promise<boolean> => {
   isRefreshing = true;
   
   refreshPromise = (async () => {
-    console.log("try refreshToken - cookies sent automatically by axios");
-    
     // Не проверяем document.cookie - он не видит HttpOnly куки
     // axios с withCredentials отправляет их автоматически
     
@@ -26,14 +25,16 @@ const refreshTokenFn = async (): Promise<boolean> => {
         withCredentials: true,
         headers: {
           "Content-Type": "application/json",
+          [CSRF_HEADER]: getCsrfToken() || '',
         },
       });
 
-      console.log("refreshToken success");
       return true;
     } catch (error) {
       const err = error as Error;
-      console.log("error refreshToken:", err.message);
+      if (import.meta.env.DEV) {
+        console.error("error refreshToken:", err.message);
+      }
       return false;
     } finally {
       isRefreshing = false;

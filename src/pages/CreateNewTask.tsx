@@ -13,9 +13,9 @@ import {
   ProFormText,
 } from '@ant-design/pro-components';
 import { App, Button, Divider, Form, Space } from 'antd';
-import { useState } from 'react';
-import { fetchTaskDetail } from '../features/tasks/api/tasks';
-import { buildPacketPreview, generateExtTaskId, submitTask } from '../features/tasks/domain/taskCreation';
+import { useEffect, useState } from 'react';
+import { useCreateTask, useGetTaskResult } from '../hooks/useTasks';
+import { buildPacketPreview, generateExtTaskId } from '../features/tasks/domain/taskCreation';
 import { getMethodCodeConfig, getMethodCodeOptions } from '../features/tasks/domain/methodCodes';
 import type { NewDeviceTaskFormValues } from '../features/tasks/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -44,32 +44,36 @@ type DetailListProps = {
 const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   const { message } = App.useApp();
   const [form] = Form.useForm<NewDeviceTaskFormValues>();
-  const [loadings, setLoadings] = useState<boolean[]>([]);
   const [taskResp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
   const [taskResult, setTaskResult] = useState<unknown>(undefined);
   const [dtItems, setDtItems] = useState<Array<{ dt_cd: string; dt_cl: number }>>([{ dt_cd: '', dt_cl: 1 }]);
+  const [serverResponseBlink, setServerResponseBlink] = useState(false);
+
+  // Используем React Query хуки
+  const createTaskMutation = useCreateTask();
+  const getTaskResultMutation = useGetTaskResult();
 
   // Отслеживаем значения формы для предпросмотра
   const formValues = Form.useWatch([], form);
 
   // Динамически генерируем JSON-представление
   const packet = formValues ? buildPacketPreview(formValues) : '';
+  
+  // Проверяем валидность пакета
+  const isValidPacket = packet.length > 0 && packet !== '{}';
 
-  const enterLoading = (index: number) => {
-    setLoadings((prev) => {
-      const newLoadings = [...prev];
-      newLoadings[index] = true;
-      return newLoadings;
-    });
+  // Состояние кнопок
+  const canSubmit = isValidPacket && !createTaskMutation.isPending && !getTaskResultMutation.isPending;
+  const canGetResult = !!taskResp && !getTaskResultMutation.isPending;
 
-    setTimeout(() => {
-      setLoadings((prev) => {
-        const newLoadings = [...prev];
-        newLoadings[index] = false;
-        return newLoadings;
-      });
-    }, 3000);
-  };
+  // Эффект моргания при получении ответа сервера
+  useEffect(() => {
+    if (taskResp) {
+      setServerResponseBlink(true);
+      const timer = setTimeout(() => setServerResponseBlink(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [taskResp]);
 
   return (
     <ModalForm<NewDeviceTaskFormValues>
@@ -425,13 +429,16 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               <Button
                 type="primary"
                 icon={<SendOutlined />}
-                loading={loadings[3]}
+                disabled={!canSubmit}
+                loading={createTaskMutation.isPending}
                 onClick={async () => {
                   try {
-                    enterLoading(3);
                     await form.validateFields();
+                    // Очищаем предыдущие результаты перед новой отправкой
+                    setTaskResp(undefined);
+                    setTaskResult(undefined);
                     const values = form.getFieldsValue();
-                    const resp = await submitTask(values);
+                    const resp = await createTaskMutation.mutateAsync(values);
                     setTaskResp(resp);
                     message.success('Задача отправлена');
                   } catch (e) {
@@ -455,14 +462,16 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               <Button
                 type="primary"
                 icon={<DownloadOutlined />}
+                disabled={!canGetResult}
+                loading={getTaskResultMutation.isPending}
                 onClick={async () => {
                   if (!taskResp?.id) {
                     message.warning('Сначала отправьте задачу (нет id)');
                     return;
                   }
                   try {
-                    const resp = await fetchTaskDetail(taskResp.id.toString());
-                    setTaskResult(resp);
+                    const result = await getTaskResultMutation.mutateAsync(taskResp.id.toString());
+                    setTaskResult(result);
                     message.success('Результат получен');
                  } catch (e) {
                   const errorMsg = e instanceof Error ? e.message : 'Ошибка при получении результата';
@@ -493,7 +502,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                   border: '1px solid #d9d9d9',
                   overflow: 'auto',
                   maxHeight: '300px',
-                  background: '#f5f5f5',
+                  background: serverResponseBlink ? '#e6f7ff' : '#f5f5f5',
+                  transition: 'background-color 0.3s ease',
                 }}
               >
                 {taskResp ? JSON.stringify(taskResp, null, 2) : '—'}

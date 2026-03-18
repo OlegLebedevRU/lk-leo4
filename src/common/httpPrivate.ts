@@ -2,6 +2,10 @@
 import axios from "axios";
 import { config as appConfig } from "./config";
 import { refreshToken } from "./httpRefreshToken";
+import { getCsrfToken, CSRF_HEADER } from "./csrf";
+
+// Методы, требующие CSRF токен
+const CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
 // Базовая настройка без X-Api-Key
 axios.defaults.baseURL = appConfig.apiV1Url;
@@ -12,13 +16,20 @@ axios.defaults.withCredentials = true;  // Использовать cookies
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// Интерцептор запроса: просто логируем запрос
+// Интерцептор запроса
 axios.interceptors.request.use(
   (config) => {
-    console.log('AXIOS REQUEST:', config.method?.toUpperCase(), config.url);
-    
     // Токен в HttpOnly cookie - браузер отправляет автоматически
     config.withCredentials = true;
+    
+    // Добавляем CSRF токен для мутирующих запросов
+    if (CSRF_METHODS.includes(config.method?.toUpperCase() || '')) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers[CSRF_HEADER] = csrfToken;
+      }
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
@@ -32,27 +43,24 @@ axios.interceptors.response.use(
     
     // Если нет ответа (CORS или ошибка сети)
     if (!error.response) {
-      console.error('CORS or network error:', error.message);
+      if (import.meta.env.DEV) {
+        console.error('CORS or network error:', error.message);
+      }
       return Promise.reject(error);
     }
     
     const status = error.response.status;
-    const contentType = error.response.headers?.['content-type'] || '';
-    
-    console.warn('AXIOS ERROR:', status, 'content-type:', contentType);
     
     // Если 401 - пробуем рефреш
     if (status === 401) {
       // НЕ пытаемся рефрешить для самого refresh endpoint
       if (originalRequest.url?.includes('/refresh/')) {
-        console.log('Refresh endpoint returned 401 - no valid refresh token');
         // Не редиректим - предоставим AuthHandler обработать
         return Promise.reject(error);
       }
       
       // Если уже рефрешим - ждём результата
       if (isRefreshing && refreshPromise) {
-        console.log('Already refreshing, waiting for result...');
         const success = await refreshPromise;
         if (success) {
           return axios(originalRequest);
@@ -66,21 +74,15 @@ axios.interceptors.response.use(
         originalRequest._retry = true;
         isRefreshing = true;
         
-        console.warn('AXIOS 401 - TRYING REFRESH');
-        
         refreshPromise = (async () => {
           try {
             // Пытаемся обновить токен
             const refreshSuccess = await refreshToken();
-            
-            if (refreshSuccess) {
-              console.log('Token refreshed successfully');
-            } else {
-              console.log('Token refresh failed');
-            }
             return refreshSuccess;
           } catch (refreshError) {
-            console.error('Error during token refresh:', refreshError);
+            if (import.meta.env.DEV) {
+              console.error('Error during token refresh:', refreshError);
+            }
             return false;
           } finally {
             isRefreshing = false;
@@ -91,14 +93,11 @@ axios.interceptors.response.use(
         const refreshSuccess = await refreshPromise;
         
         if (refreshSuccess) {
-          console.log('Retrying request after refresh');
           return axios(originalRequest);
         } else {
-          console.log('Refresh failed');
           return Promise.reject(error);
         }
       } else {
-        console.log('Already retried');
         return Promise.reject(error);
       }
     }

@@ -28,6 +28,118 @@ customModes:
       - src/common/httpRefreshToken.ts - обновление токена
       - src/pages/loginApp.tsx - форма логина
       
+  - slug: react-query
+    name: React Query (TanStack Query)
+    description: Управление серверным состоянием с React Query
+    roleDefinition: >-
+      Режим для работы с React Query (TanStack Query) - библиотекой для управления
+      серверным состоянием в React-приложениях. Включает знания о:
+      - QueryClient и QueryClientProvider
+      - useQuery и useMutation хуках
+      - Кэшировании и инвалидации
+      - Optimistic updates
+      - Query keys и их использовании
+    whenToUse: >-
+      Используйте этот режим когда нужно:
+      - Получить данные с API с автоматическим кэшированием
+      - Создать, обновить или удалить данные с инвалидацией кэша
+      - Реализовать optimistic updates
+      - Настроить повторные запросы при ошибках
+      - Управлять состоянием загрузки и ошибок
+    groups:
+      - read
+      - edit
+      - command
+    customInstructions: |
+      Ключевые файлы:
+      - src/entry.client.tsx - QueryProvider оборачивает приложение
+      - src/providers/QueryProvider.tsx - настройка React Query
+      - src/hooks/useDevices.ts - хуки для работы с устройствами
+      - src/hooks/useTasks.ts - хуки для работы с задачами (useTasks, useTaskDetail, useCreateTask, useGetTaskResult)
+      - src/hooks/useEvents.ts - хуки для работы с событиями
+      - src/features/*/api/*.ts - API функции для fetch
+      
+      Пример валидации пакета задачи:
+      ```typescript
+      // buildPacketPreview возвращает пустую строку для невалидного пакета
+      const packet = formValues ? buildPacketPreview(formValues) : '';
+      const isValidPacket = packet.length > 0 && packet !== '{}';
+      
+      // Управление доступностью кнопок
+      const canSubmit = isValidPacket && !createTaskMutation.isPending;
+      const canGetResult = !!taskResp && !getTaskResultMutation.isPending;
+      ```
+      
+      Пример визуальной обратной связи (моргание):
+      ```typescript
+      const [serverResponseBlink, setServerResponseBlink] = useState(false);
+      
+      useEffect(() => {
+        if (taskResp) {
+          setServerResponseBlink(true);
+          setTimeout(() => setServerResponseBlink(false), 300);
+        }
+      }, [taskResp]);
+      
+      // В рендере:
+      <div style={{ 
+        background: serverResponseBlink ? '#e6f7ff' : '#f5f5f5',
+        transition: 'background-color 0.3s ease'
+      }}>
+        {JSON.stringify(taskResp)}
+      </div>
+      ```
+      
+      Пример использования useQuery:
+      ```typescript
+      import { useQuery } from '@tanstack/react-query';
+      import { fetchDevices } from '../features/devices/api/devices';
+      
+      function DeviceList() {
+        const { data, isLoading, error, refetch } = useQuery({
+          queryKey: ['devices'],
+          queryFn: fetchDevices,
+          staleTime: 1000 * 60,
+        });
+      }
+      ```
+      
+      Пример использования useMutation:
+      ```typescript
+      import { useMutation, useQueryClient } from '@tanstack/react-query';
+      
+      function CreateTask() {
+        const queryClient = useQueryClient();
+        
+        const mutation = useMutation({
+          mutationFn: createTask,
+          onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          },
+        });
+      }
+      ```
+      
+      Пример использования useGetTaskResult (получение результата задачи):
+      ```typescript
+      import { useGetTaskResult } from '../hooks/useTasks';
+      
+      function TaskResult({ taskId }) {
+        const getResultMutation = useGetTaskResult();
+        
+        const handleGetResult = async () => {
+          const result = await getResultMutation.mutateAsync(taskId);
+          console.log(result);
+        };
+        
+        return (
+          <Button loading={getResultMutation.isPending} onClick={handleGetResult}>
+            Получить результат
+          </Button>
+        );
+      }
+      ```
+      
       Токены хранятся в HttpOnly куках (недоступны для JavaScript).
       
       Реализация AuthHandler (src/components/AuthHandler.tsx):

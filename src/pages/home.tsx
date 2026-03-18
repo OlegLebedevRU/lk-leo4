@@ -5,18 +5,17 @@ import Devicelist from './DeviceList';
 import EventList from './EventsList';
 import DetailList from './TasksList';
 import TagList from './DeviceTags';
-import { axiosPrivate } from '../common/httpPrivate';
+import { useDeviceInfo } from '../hooks/useDevices';
 import type { DeviceApiResponse, DeviceId } from '../features/devices/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+
 type TabKey = 'context' | 'tasks' | 'events' | 'tags';
 
 type SelectedDevice = {
   deviceId: DeviceId;
   cmd?: string;
 };
-
-type DeviceInfo = DeviceApiResponse[];
 
 const TAB_ITEMS = [
   { label: 'Контекст', key: 'context' },
@@ -35,16 +34,14 @@ const Monitoring: React.FC = () => {
     deviceId: DEFAULT_DEVICE_ID,
     cmd: '--',
   });
-  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>('context');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSoftLoading, setIsSoftLoading] = useState(false); // Для мягкой загрузки без моргания
-  const [error, setError] = useState<string | null>(null);
   const eventsRefreshFnRef = useRef<(() => void) | null>(null);
+
+  // Используем React Query хук для получения информации об устройстве
+  const { data: deviceInfo, isLoading, error, refetch } = useDeviceInfo(selectedDevice.deviceId);
 
   // Функция для регистрации функции обновления событий
   const setEventsRefreshFn = useCallback((fn: () => void) => {
-    console.log('[home] setEventsRefreshFn called');
     eventsRefreshFnRef.current = fn;
   }, []);
 
@@ -52,68 +49,66 @@ const Monitoring: React.FC = () => {
     setActiveTab(key as TabKey);
   };
 
-  const loadDeviceInfo = async (deviceId: DeviceId) => {
-    setIsLoading(true);
-    setError(null);
-    setDeviceInfo(null);
-
-    try {
-      const response = await axiosPrivate.get<DeviceInfo>('/devices/', {
-        params: { device_id: deviceId },
-      });
-      setDeviceInfo(response.data);
-    } catch (e) {
-      console.error('Failed to load device info', e);
-      setError('Не удалось загрузить сведения об устройстве');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Мягкая загрузка (для автообновления без моргания)
-  const softRefreshDeviceInfo = async (deviceId: DeviceId) => {
-    setIsSoftLoading(true);
-    try {
-      const response = await axiosPrivate.get<DeviceInfo>('/devices/', {
-        params: { device_id: deviceId },
-      });
-      setDeviceInfo(response.data);
-    } catch (e) {
-      console.error('Failed to refresh device info', e);
-      // Не показываем ошибку при фоновом обновлении
-    } finally {
-      setIsSoftLoading(false);
-    }
-  };
-
   // Interval для автообновления (1 минута)
   const AUTOREFRESH_INTERVAL = 60000;
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Функция-обёртка для вызова обновления событий
-  // Всегда вызывает eventsRefreshFn если он доступен
   const handleEventsRefresh = useCallback(() => {
-    console.log('[home] handleEventsRefresh called, eventsRefreshFn available:', !!eventsRefreshFnRef.current);
     if (eventsRefreshFnRef.current) {
       eventsRefreshFnRef.current();
     }
   }, []);
 
+  // Очистка интервала при размонтировании
+  const clearAutoRefresh = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   // Запускаем interval когда eventsRefreshFn становится доступным
+  // Останавливаем автообновление когда вкладка не активна
   useEffect(() => {
     if (!eventsRefreshFnRef.current) return;
 
-    const interval = setInterval(() => {
-      console.log('[home] Auto-refresh EventsList');
-      eventsRefreshFnRef.current?.();
-    }, AUTOREFRESH_INTERVAL);
+    // Функция для проверки необходимости автообновления
+    const shouldRefresh = () => {
+      // Не обновляем если вкладка не активна
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return false;
+      }
+      return true;
+    };
 
-    return () => clearInterval(interval);
-  }, []);
+    const runAutoRefresh = () => {
+      if (shouldRefresh()) {
+        eventsRefreshFnRef.current?.();
+      }
+    };
+
+    // Запускаем интервал
+    intervalRef.current = setInterval(runAutoRefresh, AUTOREFRESH_INTERVAL);
+
+    // Обработчик visibility change
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        // Tab became visible
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearAutoRefresh();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [clearAutoRefresh]);
 
   const handleDeviceChange = (deviceId: DeviceId, cmd?: string) => {
     setSelectedDevice({ deviceId, cmd });
     setActiveTab('context');
-    void loadDeviceInfo(deviceId);
   };
 
   const renderContextTab = () => {
@@ -122,7 +117,7 @@ const Monitoring: React.FC = () => {
     if (isLoading) {
       content = 'Загрузка сведений об устройстве...';
     } else if (error) {
-      content = error;
+      content = 'Не удалось загрузить сведения об устройстве';
     } else if (!deviceInfo) {
       content = 'Выберите устройство';
     } else if (deviceInfo.length === 0) {
@@ -142,34 +137,8 @@ const Monitoring: React.FC = () => {
         bodyStyle={{ overflow: 'hidden' }}
       >
         <ProDescriptions layout="vertical">
-          <ProDescriptions.Item label={isSoftLoading ? <span>Обновление <span style={{ opacity: 0.5 }}>(фоново)</span></span> : undefined}>
+          <ProDescriptions.Item>
     <div style={{ position: 'relative' }}>
-      {isSoftLoading && (
-        <div 
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(255,255,255,0.7)',
-            zIndex: 1
-          }}
-        >
-          <span style={{ 
-            background: 'rgba(0,0,0,0.6)', 
-            color: '#fff', 
-            padding: '4px 12px', 
-            borderRadius: '4px',
-            fontSize: '12px'
-          }}>
-            Обновление...
-          </span>
-        </div>
-      )}
       <SyntaxHighlighter
         language="json"
         style={vscDarkPlus}
@@ -248,7 +217,7 @@ const Monitoring: React.FC = () => {
       <ProCard colSpan="50%" className="device-list-card">
         <Devicelist
           onChange={handleDeviceChange}
-          onRefresh={() => softRefreshDeviceInfo(selectedDevice.deviceId)}
+          onRefresh={() => refetch?.()}
           onAfterRefresh={handleEventsRefresh}
           device_id={selectedDevice.deviceId}
         />

@@ -1,9 +1,9 @@
 // src/pages/EventsList.tsx
 import { ProTable, type ProColumns, type ActionType } from "@ant-design/pro-components";
-import { Switch, Tag, Typography } from "antd";
-import { useState, useRef, useEffect, useCallback } from "react";
-import { fetchEvents } from "../features/events/api/events";
-import { mapEventsToListItems, getEventDescription } from "../features/events/domain/eventMapping";
+import { Switch, Tag, Typography, Spin, Alert } from "antd";
+import { useState, useRef, useCallback } from "react";
+import { useEvents } from "../hooks/useEvents";
+import { getEventDescription } from "../features/events/domain/eventMapping";
 import type { EventListItem } from "../features/events/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -13,45 +13,45 @@ type EventListProps = {
   onRefresh?: (triggerRefresh: () => void) => void;
 };
 
+const AUTOREFRESH_INTERVAL = 60000; // 1 минута
+
 const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
   const [viewMode, setViewMode] = useState<"compact" | "full">("compact");
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
-  const [pageData, setPageData] = useState<EventListItem[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [newEventKeys, setNewEventKeys] = useState<Set<string>>(new Set());
   const actionRef = useRef<ActionType>(null);
-  const prevEventIds = useRef<Set<string>>(new Set());
 
   const isCompactView = viewMode === "compact";
 
-  // Функция для мягкого обновления
-  const handleSoftRefresh = useCallback(() => {
-    console.log('[EventsList] handleSoftRefresh called, currentPage:', currentPage);
-    
-    // Обновляем всегда при автообновлении от DeviceList
-    // Не проверяем activeTab, чтобы работал авторефреш
-    if (currentPage === 1 && actionRef.current) {
-      console.log('[EventsList] Calling reload');
-      actionRef.current.reload();
-    } else {
-      console.log('[EventsList] Skipping refresh - conditions not met, currentPage:', currentPage);
-    }
-  }, [currentPage]);
+  // Используем React Query хук
+  const { 
+    data, 
+    isLoading, 
+    isError, 
+    error, 
+    refetch,
+  } = useEvents(device_id, {
+    page: 1,
+    size: isCompactView ? 10 : 3,
+    refetchInterval: AUTOREFRESH_INTERVAL,
+  });
 
-  // Регистрируем функцию обновления
-  useEffect(() => {
-    console.log('[EventsList] useEffect called, onRefresh:', !!onRefresh);
+  // Функция для принудительного обновления
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // Регистрируем функцию обновления для внешнего вызова
+  useRef(() => {
     if (onRefresh) {
-      console.log('[EventsList] Registering handleSoftRefresh');
-      onRefresh(handleSoftRefresh);
+      onRefresh(handleRefresh);
     }
-  }, [onRefresh, handleSoftRefresh]);
+  });
 
   const handleViewModeChange = (checked: boolean) => {
     const mode: "compact" | "full" = checked ? "compact" : "full";
     setViewMode(mode);
-    if (mode === "full") {
-      setExpandedRowKeys(pageData.map((item) => item.createdAt));
+    if (mode === "full" && data?.items) {
+      setExpandedRowKeys(data.items.map((item) => item.createdAt));
     } else {
       setExpandedRowKeys([]);
     }
@@ -64,28 +64,20 @@ const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
       dataIndex: "createdAt",
       valueType: "text",
       width: "30%",
-      render: (_, record) => {
-        const isNew = newEventKeys.has(record.createdAt);
-        return (
-          <Typography.Text style={{ 
-            color: "#000", 
-            display: "block",
-            backgroundColor: isNew ? '#fff3cd' : 'transparent',
-            padding: isNew ? '2px 4px' : '0',
-            borderRadius: isNew ? '2px' : '0',
-            transition: 'background-color 0.5s ease',
-          }}>
-            {record.createdAt ? new Date(record.createdAt).toLocaleString("ru-RU", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            }) : "—"}
-          </Typography.Text>
-        );
-      },
+      render: (_, record) => (
+        <Typography.Text style={{ color: "#000", display: "block" }}>
+          {record.createdAt
+            ? new Date(record.createdAt).toLocaleString("ru-RU", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })
+            : "—"}
+        </Typography.Text>
+      ),
     },
     {
       title: "Nпп",
@@ -119,6 +111,30 @@ const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
     },
   ];
 
+  // Обработка состояний загрузки и ошибки
+  if (isLoading && !data) {
+    return (
+      <div style={{ padding: 20, textAlign: "center" }}>
+        <Spin size="large" />
+        <div style={{ marginTop: 8 }}>Загрузка событий...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert
+        message="Ошибка загрузки событий"
+        description={error?.message || "Не удалось загрузить события"}
+        type="error"
+        showIcon
+        action={
+          <Switch checked={isCompactView} onChange={handleViewModeChange} />
+        }
+      />
+    );
+  }
+
   return (
     <ProTable<EventListItem>
       actionRef={actionRef}
@@ -149,55 +165,21 @@ const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
         },
       }}
       columns={columns}
-      request={async (params) => {
-        const page = params.current || 1;
-        setCurrentPage(page);
-
-        const response = await fetchEvents(device_id, {
-          page: page,
-          size: params.pageSize,
-        });
-
-        const eventItems: EventListItem[] = mapEventsToListItems(response.items);
-
-        // Определяем новые события только для первой страницы
-        if (page === 1) {
-          const currentIds = new Set(eventItems.map(item => item.createdAt));
-          const newIds = new Set<string>();
-          
-          currentIds.forEach(id => {
-            if (!prevEventIds.current.has(id)) {
-              newIds.add(id);
-            }
-          });
-          
-          if (newIds.size > 0) {
-            setNewEventKeys(prev => new Set([...prev, ...newIds]));
-          }
-          
-          prevEventIds.current = currentIds;
-          
-          // Очищаем подсветку через 60 секунд
-          setTimeout(() => {
-            setNewEventKeys(prev => {
-              const updated = new Set(prev);
-              newIds.forEach(id => updated.delete(id));
-              return updated;
-            });
-          }, 60000);
-        }
-
-        return {
-          data: eventItems,
-          total: response.total,
-          success: true,
-        };
+      // Используем data из React Query вместо request
+      dataSource={data?.items || []}
+      pagination={{
+        current: 1,
+        pageSize: isCompactView ? 10 : 3,
+        total: data?.total || 0,
+        showSizeChanger: false,
+        showLessItems: false,
+        showTitle: false,
+        showTotal: (total: number) => `Всего: ${total}`,
       }}
-      onLoad={(data) => {
-        const items = data as EventListItem[];
-        setPageData(items);
-        if (!isCompactView) {
-          setExpandedRowKeys(items.map((item) => item.createdAt));
+      onLoad={() => {
+        // Раскрываем все строки в полном режиме
+        if (!isCompactView && data?.items) {
+          setExpandedRowKeys(data.items.map((item) => item.createdAt));
         }
       }}
       toolBarRender={() => [
@@ -209,13 +191,11 @@ const EventList: React.FC<EventListProps> = ({ device_id, onRefresh }) => {
           unCheckedChildren="Полное"
         />,
       ]}
-      options={{ reload: true }}
-      pagination={{
-        pageSize: isCompactView ? 10 : 3,
-        showSizeChanger: false,
-        showLessItems: false,
-        showTitle: false,
-        showTotal: (total: number) => `Всего: ${total}`,
+      options={{
+        reload: () => {
+          handleRefresh();
+          return Promise.resolve();
+        },
       }}
       rowKey="createdAt"
       search={false}

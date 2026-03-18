@@ -1,5 +1,113 @@
 # Documentation / Документация
 
+## Архитектура
+
+### React Query (TanStack Query)
+
+Проект использует React Query для управления серверным состоянием:
+
+```bash
+npm install @tanstack/react-query
+```
+
+#### Провайдер
+
+QueryProvider оборачивает всё приложение в [`src/entry.client.tsx`](src/entry.client.tsx:1).
+
+#### Хуки
+
+Доступные хуки:
+- [`src/hooks/useDevices.ts`](src/hooks/useDevices.ts) — получение списка устройств, принудительное обновление, получение информации об устройстве
+- [`src/hooks/useTasks.ts`](src/hooks/useTasks.ts) — получение списка задач, детали задачи, создание задачи, получение результата
+- [`src/hooks/useEvents.ts`](src/hooks/useEvents.ts) — получение событий устройства с пагинацией
+
+#### Query Keys
+
+Все хуки используют централизованные query keys для правильной инвалидации:
+
+```typescript
+// devices
+devicesKeys.all // ['devices']
+devicesKeys.list() // ['devices', 'list']
+devicesKeys.detail(id) // ['devices', 'detail', id]
+devicesKeys.byId(id) // ['devices', 'byId', id]
+
+// tasks
+tasksKeys.all // ['tasks']
+tasksKeys.lists() // ['tasks', 'list']
+tasksKeys.list(deviceId) // ['tasks', 'list', { deviceId }]
+tasksKeys.details() // ['tasks', 'detail']
+tasksKeys.detail(taskId) // ['tasks', 'detail', taskId]
+
+// events
+eventsKeys.all // ['events']
+eventsKeys.lists() // ['events', 'list']
+eventsKeys.list(deviceId) // ['events', 'list', { deviceId }]
+```
+
+#### Пример использования
+
+```typescript
+import { useDevices, useInvalidateDevices } from '../hooks/useDevices';
+import { useTasks, useCreateTask } from '../hooks/useTasks';
+import { useEvents } from '../hooks/useEvents';
+
+function DeviceList() {
+  const { data, isLoading, error, refetch } = useDevices();
+  const invalidate = useInvalidateDevices();
+  
+  if (isLoading) return <Spin />;
+  if (error) return <Alert message={String(error)} />;
+  
+  return (
+    <Table 
+      dataSource={data} 
+      onRefresh={invalidate}
+    />
+  );
+}
+
+function DeviceTasks({ deviceId }: { deviceId: string }) {
+  const { data, isLoading, error } = useTasks(deviceId);
+  
+  if (isLoading) return <Spin />;
+  if (error) return <Alert message={String(error)} />;
+  
+  return <Table dataSource={data} />;
+}
+
+function DeviceEvents({ deviceId }: { deviceId: string }) {
+  // С автообновлением каждые 60 секунд
+  const { data, isLoading, refetch } = useEvents(deviceId, {
+    refetchInterval: 60000,
+  });
+  
+  return <List dataSource={data?.items} />;
+}
+
+function CreateTaskForm() {
+  const createTaskMutation = useCreateTask();
+  
+  const handleSubmit = async (task: NewDeviceTask) => {
+    try {
+      await createTaskMutation.mutateAsync(task);
+      message.success('Задача создана');
+    } catch (error) {
+      message.error('Ошибка создания задачи');
+    }
+  };
+  
+  return (
+    <Form onFinish={handleSubmit}>
+      {/* форма */}
+      <Button loading={createTaskMutation.isPending}>
+        Создать задачу
+      </Button>
+    </Form>
+  );
+}
+```
+
 ## Деплой и инфраструктура
 
 ### Сборка
@@ -137,84 +245,149 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
   build: {
-    outDir: 'dist',
+    outDir: './dist',
+    assetsDir: 'assets',
+    emptyOutDir: true,
+    sourcemap: false,
+    chunkSizeWarningLimit: 2100,
     rollupOptions: {
       output: {
-        manualChunks: undefined,
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-antd': ['antd', '@ant-design/icons', '@ant-design/pro-components', '@ant-design/pro-provider'],
+          'vendor-utils': ['axios', 'react-syntax-highlighter'],
+        },
       },
     },
+    minify: 'esbuild',
+  },
+  esbuild: {
+    drop: ['console', 'debugger'],
   },
   server: {
     port: 5173,
     strictPort: true,
   },
+  publicDir: 'public',
 });
 ```
 
 Ключевые моменты:
-- `ssr: false` не требуется явно - Vite по умолчанию для клиентского рендеринга
-- `base: '/'` - для работы на корне домена
-- `outDir: 'dist'` - директория для билда
+- `manualChunks` - разделение бандлов на react, antd, utils
+- `minify: 'esbuild'` - быстрая минификация
+- `esbuild.drop` - удаление console и debugger в production
+- `chunkSizeWarningLimit: 2100` - увеличенный лимит для больших бандлов
 
 ### React Router
 
 Файл: `src/entry.client.tsx`
 
 ```typescript
-import { createBrowserRouter } from 'react-router';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 import { Suspense } from 'react';
+import { Layout } from './Layout';
+import { QueryProvider } from './providers/QueryProvider';
+import { AuthHandler } from './components/AuthHandler';
+import { PageLoader } from './components/PageLoader';
 
 // Lazy-loaded страницы
 const HomePage = React.lazy(() => import("./pages/home"));
-const LoginPage = React.lazy(() => import("./pages/login"));
+const LoginPage = React.lazy(() => import("./pages/loginApp"));
 const CatchAll = React.lazy(() => import("./catchall"));
 
-const PageLoader = () => <div>Загрузка...</div>;
+// Обертка для применения Layout
+function PageWithLayout({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Layout>
+        <Component />
+      </Layout>
+    </Suspense>
+  );
+}
 
+// Маршруты с Layout
 const router = createBrowserRouter([
+  { path: "/", element: <PageWithLayout component={HomePage} /> },
   { path: "/login", element: <Suspense fallback={<PageLoader />}><LoginPage /></Suspense> },
-  { path: "/", element: <Suspense fallback={<PageLoader />}><HomePage /></Suspense> },
-  { path: "*", element: <Suspense fallback={<PageLoader />}><CatchAll /></Suspense> },
+  { path: "*", element: <Suspense fallback={<PageLoader />}><Layout><CatchAll /></Layout></Suspense> },
 ]);
+
+// Рендеринг
+createRoot(container).render(
+  <React.StrictMode>
+    <QueryProvider>
+      <AuthHandler />
+      <RouterProvider router={router} />
+    </QueryProvider>
+  </React.StrictMode>
+);
 ```
 
-Использование:
-
-```typescript
-import { RouterProvider } from 'react-router';
-
-<RouterProvider router={router} />
-```
-
-**Примечание:** В React Router v7 используется только пакет `react-router` (не `react-router-dom`).
+**Примечание:** 
+- В React Router v7 используется только пакет `react-router`
+- Layout применяется ко всем страницам через `PageWithLayout` обёртку
+- QueryProvider оборачивает приложение для React Query
 
 ### Архитектура приложения
 
 ```
 src/
 ├── entry.client.tsx    # Точка входа (createRoot + RouterProvider + createBrowserRouter)
-├── Layout.tsx          # Основной layout с antd
+├── Layout.tsx          # Основной layout с antd (ConfigProvider, ProConfigProvider)
 ├── catchall.tsx        # Catch-all для 404
+├── providers/
+│   └── QueryProvider.tsx # React Query провайдер
+├── hooks/
+│   ├── useDevices.ts   # Хук для работы с устройствами
+│   ├── useTasks.ts     # Хук для работы с задачами
+│   └── useEvents.ts    # Хук для работы с событиями
 ├── components/
 │   ├── AuthHandler.tsx # Обработчик 401 редиректов
 │   └── PageLoader.tsx  # Индикатор загрузки
 ├── common/
 │   ├── config.ts       # Конфигурация API
-│   ├── httpPrivate.ts # Axios с интерцепторами, 401 обработка
+│   ├── httpPrivate.ts  # Axios с интерцепторами, 401 обработка
 │   ├── httpPublic.ts   # Публичный axios без токена
 │   └── httpRefreshToken.ts # Обновление токена
+├── features/           # Feature-based модули
+│   ├── devices/
+│   │   ├── api/devices.ts
+│   │   ├── types.ts
+│   │   └── domain/deviceMapping.ts
+│   └── tasks/
+│       ├── api/tasks.ts
+│       ├── types.ts
+│       └── domain/taskMapping.ts
 └── pages/
-    ├── login.tsx       # Lazy-обёртка для loginApp
-    ├── loginApp.tsx    # Форма логина
+    ├── loginApp.tsx    # Форма логина (с общей темой через Layout)
     ├── home.tsx        # Главная страница
-    ├── DeviceList.tsx  # Список устройств
-    ├── TasksList.tsx   # Список задач
-    ├── EventsList.tsx  # Список событий
-    ├── DeviceTags.tsx  # Теги устройств
+    ├── DeviceList.tsx   # Список устройств
+    ├── TasksList.tsx    # Список задач
+    ├── EventsList.tsx   # Список событий
+    ├── DeviceTags.tsx   # Теги устройств
     └── CreateNewTask.tsx # Создание задачи
 ```
+
+### Безопасность
+
+### CSRF Protection
+
+Фронтенд автоматически добавляет CSRF токен к мутирующим запросам (POST, PUT, PATCH, DELETE).
+
+#### Файлы
+- [`src/common/csrf.ts`](src/common/csrf.ts:1) — утилиты для работы с CSRF токеном
+- [`src/common/httpPrivate.ts`](src/common/httpPrivate.ts:1) — интерцептор добавляет заголовок `X-CSRFToken`
+
+#### Как работает
+1. При первом GET запросе сервер устанавливает cookie `csrftoken`
+2. Фронтенд читает токен из cookie через `getCsrfToken()`
+3. При мутирующих запросах токен добавляется в заголовок `X-CSRFToken`
+4. Бэкенд проверяет токен
+
+#### Требования к бэкенду
+См. [`docs/CSRF_BACKEND_SETUP.md`](docs/CSRF_BACKEND_SETUP.md:1)
 
 ### Аутентификация
 
@@ -228,6 +401,17 @@ src/
 - `src/common/httpPrivate.ts` - интерцептор для 401
 - `src/entry.client.tsx` - AuthHandler для редиректов
 - `src/pages/loginApp.tsx` - форма логина
+
+### CSRF Protection
+
+Фронтенд автоматически добавляет CSRF токен к мутирующим запросам (POST, PUT, PATCH, DELETE).
+
+#### Файлы
+- [`src/common/csrf.ts`](src/common/csrf.ts:1) — утилиты для работы с CSRF токеном
+- [`src/common/httpPrivate.ts`](src/common/httpPrivate.ts:1) — интерцептор добавляет заголовок `X-CSRFToken`
+
+#### Требования к бэкенду
+См. [`docs/CSRF_BACKEND_SETUP.md`](docs/CSRF_BACKEND_SETUP.md:1)
 
 ---
 

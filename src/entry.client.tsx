@@ -5,17 +5,51 @@ import "./index.css";
 import React, { Suspense } from "react";
 import { AuthHandler } from "./components/AuthHandler";
 import { PageLoader } from "./components/PageLoader";
+import { Layout } from "./Layout";
+import { QueryProvider } from "./providers/QueryProvider";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Lazy-loaded страницы
 const HomePage = React.lazy(() => import("./pages/home"));
-const LoginPage = React.lazy(() => import("./pages/login"));
+const LoginPage = React.lazy(() => import("./pages/loginApp"));
 const CatchAll = React.lazy(() => import("./catchall"));
 
-// Определяем маршруты
+/* eslint-disable react-refresh/only-export-components */
+// Обертка для применения Layout с ленивой загрузкой
+function PageWithLayout({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Layout>
+        <Component />
+      </Layout>
+    </Suspense>
+  );
+}
+
+// Определяем маршруты с Layout
 const router = createBrowserRouter([
-  { path: "/login", element: <Suspense fallback={<PageLoader />}><LoginPage /></Suspense> },
-  { path: "/", element: <Suspense fallback={<PageLoader />}><HomePage /></Suspense> },
-  { path: "*", element: <Suspense fallback={<PageLoader />}><CatchAll /></Suspense> },
+  {
+    path: "/",
+    element: <PageWithLayout component={HomePage} />,
+  },
+  {
+    path: "/login",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <LoginPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: "*",
+    element: (
+      <Suspense fallback={<PageLoader />}>
+        <Layout>
+          <CatchAll />
+        </Layout>
+      </Suspense>
+    ),
+  },
 ]);
 
 const container = document.getElementById("root");
@@ -23,7 +57,11 @@ if (!container) throw new Error("Root element not found");
 
 createRoot(container).render(
   <React.StrictMode>
-    <AuthHandler />
-    <RouterProvider router={router} />
+    <ErrorBoundary>
+      <QueryProvider>
+        <AuthHandler />
+        <RouterProvider router={router} />
+      </QueryProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

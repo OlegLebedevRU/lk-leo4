@@ -1,17 +1,13 @@
 // src/pages/TasksList.tsx
 import { ProTable, type ProColumns } from '@ant-design/pro-components';
-import {
-  Tag,
-  Typography,
-  Spin,
-  Button,
-} from 'antd';
+import { Tag, Typography, Spin, Button, Alert } from 'antd';
 import NewTask from './CreateNewTask';
-import { fetchTasks, fetchTaskDetail } from '../features/tasks/api/tasks';
-import { mapTasksToListItems, mapApiResponseToFullTaskDetail, } from '../features/tasks/domain/taskMapping';
+import { fetchTaskDetail } from '../features/tasks/api/tasks';
+import { mapTasksToListItems, mapApiResponseToFullTaskDetail } from '../features/tasks/domain/taskMapping';
 import { getStatusTag } from '../features/tasks/domain/statusMapping';
 import type { TaskListItem, FullTaskDetail } from '../features/tasks/types';
 import { useState, type Key } from 'react';
+import { useTasks } from '../hooks/useTasks';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 const { Text: AntText, Paragraph: AntParagraph } = Typography;
@@ -24,6 +20,9 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
   const [expandedRowKeys, setExpandedRowKeys] = useState<Key[]>([]);
   const [loadingRows, setLoadingRows] = useState<Record<string, boolean>>({});
   const [taskDetails, setTaskDetails] = useState<Record<string, FullTaskDetail>>({});
+
+  // Используем React Query хук
+  const { data, isLoading, isError, error, refetch } = useTasks(device_id);
 
   const loadTaskDetail = async (taskId: string, poll = false) => {
     if (loadingRows[taskId]) return;
@@ -140,6 +139,32 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
     },
   ];
 
+  // Показываем загрузку при первом рендере
+  if (isLoading && !data) {
+    return (
+      <div style={{ padding: 20, textAlign: 'center', paddingTop: 40 }}>
+        <Spin size="large" />
+        <div style={{ marginTop: 8 }}>Загрузка задач...</div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Alert
+        message="Ошибка загрузки задач"
+        description={error?.message || 'Не удалось загрузить список задач'}
+        type="error"
+        showIcon
+        action={
+          <Button size="small" onClick={() => refetch()}>
+            Повторить
+          </Button>
+        }
+      />
+    );
+  }
+
   return (
     <ProTable<TaskListItem>
       headerTitle="Список заданий (команд)"
@@ -249,39 +274,19 @@ const DetailList: React.FC<DetailListProps> = ({ device_id }) => {
         },
       }}
       columns={columns}
-      request={async (params) => {
-        try {
-          const response = await fetchTasks(device_id, {
-            page: params.current,
-            size: params.pageSize || 10,
-          });
-
-          const taskItems: TaskListItem[] = mapTasksToListItems(response.items);
-
-          return {
-            data: taskItems,
-            total: response.total,
-            success: true,
-          };
-        } catch (error) {
-          console.error('Failed to load tasks:', error);
-          return {
-            data: [],
-            total: 0,
-            success: false,
-            errorMessage: 'Не удалось загрузить список задач',
-          };
-        }
-      }}
+      // Используем данные из React Query
+      dataSource={data?.items ? mapTasksToListItems(data.items) : []}
       rowKey="task_id"
       search={false}
       pagination={{
+        current: 1,
         pageSize: 10,
+        total: data?.total || 0,
         showSizeChanger: false,
         showTotal: (total: number) => `Всего: ${total}`,
       }}
       toolBarRender={() => [<NewTask device_id={device_id} key="new-task" />]}
-      style={{ background: '#fff' }} // ← светлый фон
+      style={{ background: '#fff' }}
     />
   );
 };
