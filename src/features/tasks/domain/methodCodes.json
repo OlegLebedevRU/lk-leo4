@@ -86,6 +86,57 @@
           "tooltip": "Номера слотов для удаления привязок"
         }
       ]
+    },
+    {
+      "code": 49,
+      "label": "49 - Запись данных в БД",
+      "description": "Запись параметров в базу данных устройства",
+      "dropdownTooltip": "Запись данных в БД устройства",
+      "dtFormat": "dbWrite",
+      "supportsMultiple": true,
+      "dtFields": [
+        {
+          "fieldName": "dt_ns",
+          "label": "Раздел БД",
+          "type": "string",
+          "defaultValue": "",
+          "example": "system",
+          "tooltip": "Имя раздела базы данных (ns)"
+        },
+        {
+          "fieldName": "dt_k",
+          "label": "Ключ параметра",
+          "type": "string",
+          "defaultValue": "",
+          "example": "param_name",
+          "tooltip": "Наименование или ключ параметра (k)"
+        },
+        {
+          "fieldName": "dt_t",
+          "label": "Тип данных",
+          "type": "select",
+          "defaultValue": "i32",
+          "example": "i32",
+          "tooltip": "Тип данных: i8, u8, i16, u16, i32, u32, str",
+          "options": [
+            { "value": "i8", "label": "i8 (int8_t)" },
+            { "value": "u8", "label": "u8 (uint8_t)" },
+            { "value": "i16", "label": "i16 (int16_t)" },
+            { "value": "u16", "label": "u16 (uint16_t)" },
+            { "value": "i32", "label": "i32 (int32_t)" },
+            { "value": "u32", "label": "u32 (uint32_t)" },
+            { "value": "str", "label": "str (строка)" }
+          ]
+        },
+        {
+          "fieldName": "dt_v",
+          "label": "Значение",
+          "type": "string",
+          "defaultValue": "",
+          "example": "123",
+          "tooltip": "Значение параметра (v)"
+        }
+      ]
     }
   ]
 }

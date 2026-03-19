@@ -15,7 +15,7 @@ import {
 import { App, Button, Divider, Form, Space } from 'antd';
 import { useEffect, useState } from 'react';
 import { useCreateTask, useGetTaskResult } from '../hooks/useTasks';
-import { buildPacketPreview, generateExtTaskId } from '../features/tasks/domain/taskCreation';
+import { buildPacketPreview, generateExtTaskId, toNewDeviceTaskRequest } from '../features/tasks/domain/taskCreation';
 import { getMethodCodeConfig, getMethodCodeOptions } from '../features/tasks/domain/methodCodes';
 import type { NewDeviceTaskFormValues } from '../features/tasks/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -46,7 +46,9 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
   const [form] = Form.useForm<NewDeviceTaskFormValues>();
   const [taskResp, setTaskResp] = useState<{ id: string | number } | undefined>(undefined);
   const [taskResult, setTaskResult] = useState<unknown>(undefined);
-  const [dtItems, setDtItems] = useState<Array<{ dt_cd: string; dt_cl: number }>>([{ dt_cd: '', dt_cl: 1 }]);
+  // Тип для поддержки разных форматов: method_code=16 (dt_cd, dt_cl) и method_code=49 (dt_ns, dt_k, dt_t, dt_v)
+  type DtItemType = { dt_cd?: string; dt_cl?: number; dt_ns?: string; dt_k?: string; dt_t?: string; dt_v?: string };
+  const [dtItems, setDtItems] = useState<DtItemType[]>([{ dt_cd: '', dt_cl: 1 }]);
   const [serverResponseBlink, setServerResponseBlink] = useState(false);
 
   // Используем React Query хуки
@@ -102,8 +104,14 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
             });
             // Для поддержки множественных объектов
             if (config.supportsMultiple) {
-              defaultDtValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
-              setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+              if (config.dtFormat === 'dbWrite') {
+                // Для записи в БД используем другие поля
+                defaultDtValues.dt_items = [{ dt_ns: '', dt_k: '', dt_t: 'i32', dt_v: '' }];
+                setDtItems([{ dt_ns: '', dt_k: '', dt_t: 'i32', dt_v: '' }]);
+              } else {
+                defaultDtValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
+                setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+              }
             } else {
               setDtItems([{ dt_cd: '', dt_cl: 1 }]);
             }
@@ -184,8 +192,14 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     });
                     // Для поддержки множественных объектов
                     if (config.supportsMultiple) {
-                      defaultValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
-                      setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+                      if (config.dtFormat === 'dbWrite') {
+                        // Для записи в БД используем другие поля
+                        defaultValues.dt_items = [{ dt_ns: '', dt_k: '', dt_t: 'i32', dt_v: '' }];
+                        setDtItems([{ dt_ns: '', dt_k: '', dt_t: 'i32', dt_v: '' }]);
+                      } else {
+                        defaultValues.dt_items = [{ dt_cd: '', dt_cl: 1 }];
+                        setDtItems([{ dt_cd: '', dt_cl: 1 }]);
+                      }
                     }
                     form.setFieldsValue(defaultValues);
                   }
@@ -216,73 +230,110 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               );
             }
             
-            // Для поддержки множественных объектов (method_code=16)
+            // Для поддержки множественных объектов (method_code=16, 49)
             if (config.supportsMultiple) {
               // Используем useState для управления списком
-              const currentItems = form.getFieldValue('dt_items') as Array<{ dt_cd: string; dt_cl: number }> | undefined;
-              const items = currentItems && currentItems.length > 0 ? currentItems : dtItems;
               
-              return (
-                <>
-                  {items.map((item, index) => (
-                    <ProForm.Group key={index} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 8 }}>
-                      <ProFormText
-                        name={['dt_items', index, 'dt_cd']}
-                        label={index === 0 ? 'ID карты/пинкод' : ''}
-                        tooltip={index === 0 ? 'ID карты или пинкод (до 6 цифр)' : undefined}
-                        placeholder="111111"
-                        style={{ width: 140 }}
-                        fieldProps={{
-                          maxLength: 6,
-                          onChange: (e) => {
-                            // Обновляем значение в массиве
-                            const newItems = [...items];
-                            newItems[index] = { ...newItems[index], dt_cd: e.target.value };
-                            form.setFieldsValue({ dt_items: newItems });
-                          }
-                        }}
-                      />
-                      <ProFormDigit
-                        name={['dt_items', index, 'dt_cl']}
-                        label={index === 0 ? 'Слот/ячейка' : ''}
-                        tooltip={index === 0 ? 'Номер слота/ячейки (1-255)' : undefined}
-                        initialValue={item.dt_cl || 1}
-                        min={1}
-                        max={255}
-                        width={80}
-                      />
-                      {items.length > 1 && (
-                        <Button
-                          type="text"
-                          danger
-                          onClick={() => {
-                            const newItems = items.filter((_, i) => i !== index);
-                            setDtItems(newItems);
-                            form.setFieldsValue({ dt_items: newItems });
+              // Проверяем формат dbWrite для method_code=49
+              if (config.dtFormat === 'dbWrite') {
+                const currentItems = form.getFieldValue('dt_items') as DtItemType[] | undefined;
+                const items: DtItemType[] = currentItems && currentItems.length > 0 ? currentItems : dtItems;
+                
+                return (
+                  <>
+                    {items.map((item, index) => (
+                      <ProForm.Group key={index} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 8 }}>
+                        <ProFormText
+                          name={['dt_items', index, 'dt_ns']}
+                          label={index === 0 ? 'Раздел БД' : ''}
+                          tooltip={index === 0 ? 'Имя раздела базы данных (ns)' : undefined}
+                          placeholder="system"
+                          style={{ width: 120 }}
+                          fieldProps={{
+                            onChange: (e) => {
+                              const newItems = [...items];
+                              newItems[index] = { ...newItems[index], dt_ns: e.target.value };
+                              form.setFieldsValue({ dt_items: newItems });
+                            }
                           }}
-                        >
-                          ✕
-                        </Button>
-                      )}
-                    </ProForm.Group>
-                  ))}
-                  <Button
-                    type="dashed"
-                    onClick={() => {
-                      const newItems = [...items, { dt_cd: '', dt_cl: 1 }];
-                      setDtItems(newItems);
-                      form.setFieldsValue({ dt_items: newItems });
-                    }}
-                    icon={<PlusOutlined />}
-                    style={{ marginTop: 8 }}
-                  >
-                    Добавить ещё
-                  </Button>
-                  <div style={{ marginTop: 8, marginBottom: 16, color: '#888', fontSize: 12 }}>
-                    {config.description}
-                  </div>
+                        />
+                        <ProFormText
+                          name={['dt_items', index, 'dt_k']}
+                          label={index === 0 ? 'Ключ' : ''}
+                          tooltip={index === 0 ? 'Ключ параметра (k)' : undefined}
+                          placeholder="param_name"
+                          style={{ width: 120 }}
+                          fieldProps={{
+                            onChange: (e) => {
+                              const newItems = [...items];
+                              newItems[index] = { ...newItems[index], dt_k: e.target.value };
+                              form.setFieldsValue({ dt_items: newItems });
+                            }
+                          }}
+                        />
+                        <ProFormSelect
+                          name={['dt_items', index, 'dt_t']}
+                          label={index === 0 ? 'Тип' : ''}
+                          tooltip={index === 0 ? 'Тип данных (t)' : undefined}
+                          initialValue={(item as { dt_t?: string }).dt_t || 'i32'}
+                          options={[
+                            { value: 'i8', label: 'i8' },
+                            { value: 'u8', label: 'u8' },
+                            { value: 'i16', label: 'i16' },
+                            { value: 'u16', label: 'u16' },
+                            { value: 'i32', label: 'i32' },
+                            { value: 'u32', label: 'u32' },
+                            { value: 'str', label: 'str' },
+                          ]}
+                          style={{ width: 80 }}
+                        />
+                        <ProFormText
+                          name={['dt_items', index, 'dt_v']}
+                          label={index === 0 ? 'Значение' : ''}
+                          tooltip={index === 0 ? 'Значение параметра (v)' : undefined}
+                          placeholder="123"
+                          style={{ width: 100 }}
+                          fieldProps={{
+                            onChange: (e) => {
+                              const newItems = [...items];
+                              newItems[index] = { ...newItems[index], dt_v: e.target.value };
+                              form.setFieldsValue({ dt_items: newItems });
+                            }
+                          }}
+                        />
+                        {items.length > 1 && (
+                          <Button
+                            type="text"
+                            danger
+                            onClick={() => {
+                              const newItems = items.filter((_, i) => i !== index);
+                              setDtItems(newItems);
+                              form.setFieldsValue({ dt_items: newItems });
+                            }}
+                          >
+                            ✕
+                          </Button>
+                        )}
+                      </ProForm.Group>
+                    ))}
+                    <Button
+                      type="dashed"
+                      onClick={() => {
+                        const newItems = [...items, { dt_ns: '', dt_k: '', dt_t: 'i32', dt_v: '' }];
+                        setDtItems(newItems);
+                        form.setFieldsValue({ dt_items: newItems });
+                      }}
+                      icon={<PlusOutlined />}
+                      style={{ marginTop: 8 }}
+                    >
+                      Добавить ещё
+                    </Button>
+                    <div style={{ marginTop: 8, marginBottom: 16, color: '#888', fontSize: 12 }}>
+                      {config.description}
+                    </div>
                 </>
               );
+              }
             }
             
             // Группировка полей по группам (например, для method_code=16)
@@ -337,6 +388,21 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                             label={field.label}
                             tooltip={field.tooltip}
                             initialValue={field.defaultValue}
+                            fieldProps={{
+                              placeholder: field.example ? `Например: ${field.example}` : undefined,
+                            }}
+                          />
+                        );
+                      }
+                      if (field.type === 'select') {
+                        return (
+                          <ProFormSelect
+                            key={field.fieldName}
+                            name={field.fieldName}
+                            label={field.label}
+                            tooltip={field.tooltip}
+                            initialValue={field.defaultValue}
+                            options={field.options || []}
                             fieldProps={{
                               placeholder: field.example ? `Например: ${field.example}` : undefined,
                             }}
@@ -438,7 +504,8 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                     setTaskResp(undefined);
                     setTaskResult(undefined);
                     const values = form.getFieldsValue();
-                    const resp = await createTaskMutation.mutateAsync(values);
+                    const task = toNewDeviceTaskRequest(values);
+                    const resp = await createTaskMutation.mutateAsync(task);
                     setTaskResp(resp);
                     message.success('Задача отправлена');
                   } catch (e) {

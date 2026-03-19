@@ -75,5 +75,5 @@ export type NewDeviceTaskFormValues = {
   dt_pin?: string;      // Для method_code=35: пинкод
   dt_values?: number[] | string; // Для method_code=47: массив слотов
   // Для method_code=16 с множественными объектами
-  dt_items?: Array<{ dt_cd: string; dt_cl: number }>;
+  dt_items?: Array<{ dt_cd: string; dt_cl: number }> | Array<{ dt_ns: string; dt_k: string; dt_t: string; dt_v: string }>;
 };

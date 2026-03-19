@@ -8,8 +8,124 @@ import methodCodesData from './methodCodes.json';
  * - stringArray: список строк ["value", ...]
  * - numberArray: список чисел [1, 2, ...]
  * - empty: пустой массив
+ * - dbWrite: запись данных в БД [{ns, k, t, v}, ...]
  */
-export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty';
+export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty' | 'dbWrite';
+
+/**
+ * Поддерживаемые типы данных для записи в БД
+ */
+export type DbWriteDataType = 'i8' | 'u8' | 'i16' | 'u16' | 'i32' | 'u32' | 'str';
+
+/**
+ * Элемент данных для записи в БД
+ */
+export interface DbWriteDtItem {
+  ns: string;
+  k: string;
+  t: DbWriteDataType;
+  v: number | string;
+}
+
+/**
+ * Валидация типа данных
+ */
+/**
+ * Валидация типа данных
+ */
+export function isValidDbWriteType(type: string): type is DbWriteDataType {
+  return ['i8', 'u8', 'i16', 'u16', 'i32', 'u32', 'str'].includes(type);
+}
+
+/**
+ * Парсинг значения в соответствии с типом данных
+ * @param value Строковое значение
+ * @param type Тип данных
+ * @returns Числовое или строковое значение
+ * @throws Error при некорректном значении
+ */
+export function parseDbWriteValue(value: string, type: DbWriteDataType): number | string {
+  if (type === 'str') {
+    return value;
+  }
+
+  // Проверка на пустое значение для числовых типов
+  if (value === '' || value === undefined || value === null) {
+    throw new Error('Значение не может быть пустым для числового типа');
+  }
+
+  // Проверяем, что значение является числом
+  if (!/^-?\d+$/.test(value)) {
+    throw new Error(`Значение должно быть целым числом для типа ${type}`);
+  }
+
+  const num = parseInt(value, 10);
+
+  // Проверка границ для знаковых типов
+  switch (type) {
+    case 'i8':
+      if (num < -128 || num > 127) {
+        throw new Error('Значение должно быть в диапазоне -128...127 для i8');
+      }
+      return num;
+    case 'u8':
+      if (num < 0 || num > 255) {
+        throw new Error('Значение должно быть в диапазоне 0...255 для u8');
+      }
+      return num;
+    case 'i16':
+      if (num < -32768 || num > 32767) {
+        throw new Error('Значение должно быть в диапазоне -32768...32767 для i16');
+      }
+      return num;
+    case 'u16':
+      if (num < 0 || num > 65535) {
+        throw new Error('Значение должно быть в диапазоне 0...65535 для u16');
+      }
+      return num;
+    case 'i32':
+      if (num < -2147483648 || num > 2147483647) {
+        throw new Error('Значение должно быть в диапазоне -2147483648...2147483647 для i32');
+      }
+      return num;
+    case 'u32':
+      if (num < 0 || num > 4294967295) {
+        throw new Error('Значение должно быть в диапазоне 0...4294967295 для u32');
+      }
+      return num;
+    default:
+      throw new Error(`Неизвестный тип данных: ${type}`);
+  }
+}
+
+/**
+ * Формирование объекта dt для записи в БД
+ */
+function buildDbWriteItem(values: Record<string, unknown>): DbWriteDtItem | null {
+  const ns = String(values.dt_ns || '').trim();
+  const k = String(values.dt_k || '').trim();
+  const t = String(values.dt_t || 'i32').trim();
+  const v = String(values.dt_v || '');
+
+  if (!ns) {
+    throw new Error('Раздел БД (ns) не может быть пустым');
+  }
+  if (!k) {
+    throw new Error('Ключ параметра (k) не может быть пустым');
+  }
+  if (!isValidDbWriteType(t)) {
+    throw new Error(`Недопустимый тип данных: ${t}. Допустимы: i8, u8, i16, u16, i32, u32, str`);
+  }
+
+  const parsedValue = parseDbWriteValue(v, t);
+
+  return {
+    ns,
+    k,
+    t,
+    v: parsedValue,
+  };
+}
 
 /**
  * Конфигурация полей dt для каждого method_code (из JSON)
@@ -20,7 +136,7 @@ export interface MethodCodeFieldJson {
   /** Отображаемое имя поля */
   label: string;
   /** Тип поля */
-  type: 'string' | 'number' | 'numberArray' | 'stringArray';
+  type: 'string' | 'number' | 'numberArray' | 'stringArray' | 'select';
   /** Значение по умолчанию */
   defaultValue?: string | number | number[] | string[];
   /** Пример значения */
@@ -29,6 +145,8 @@ export interface MethodCodeFieldJson {
   tooltip?: string;
   /** Группа полей (для размещения в одну строку) */
   group?: string;
+  /** Опции для типа select */
+  options?: Array<{ value: string; label: string }>;
 }
 
 /**
@@ -62,7 +180,7 @@ export interface MethodCodeField {
   /** Отображаемое имя поля */
   label: string;
   /** Тип поля */
-  type: 'string' | 'number' | 'numberArray' | 'stringArray';
+  type: 'string' | 'number' | 'numberArray' | 'stringArray' | 'select';
   /** Значение по умолчанию */
   defaultValue?: string | number | number[] | string[];
   /** Пример значения */
@@ -71,6 +189,8 @@ export interface MethodCodeField {
   tooltip?: string;
   /** Группа полей (для размещения в одну строку) */
   group?: string;
+  /** Опции для типа select */
+  options?: Array<{ value: string; label: string }>;
 }
 
 /**
@@ -166,6 +286,19 @@ function createBuildDt(config: MethodCodeConfigJson): (values: Record<string, un
         return [{ cd: String(cd).trim(), cl: cl ?? 1 }];
       }
 
+      case 'dbWrite': {
+        // Для записи данных в БД (49) - возвращает [{ns, k, t, v}, ...]
+        // Поддержка множественных записей
+        if (config.supportsMultiple && values.dt_items && Array.isArray(values.dt_items)) {
+          return (values.dt_items as Record<string, unknown>[])
+            .map(item => buildDbWriteItem(item))
+            .filter((item): item is DbWriteItem => item !== null);
+        }
+        // Одиночная запись
+        const item = buildDbWriteItem(values);
+        return item ? [item] : [];
+      }
+
       default:
         return [];
     }
@@ -173,22 +306,41 @@ function createBuildDt(config: MethodCodeConfigJson): (values: Record<string, un
 }
 
 /**
+ * Тип для элемента БД (используется внутри createBuildDt)
+ */
+interface DbWriteItem {
+  ns: string;
+  k: string;
+  t: DbWriteDataType;
+  v: number | string;
+}
+
+/**
  * Создать функцию buildDtMultiple для множественных объектов
  */
 function createBuildDtMultiple(config: MethodCodeConfigJson): ((items: Record<string, unknown>[]) => unknown[]) | undefined {
-  // Только для method_code=16 (привязка карты)
-  if (config.code !== 16 || !config.supportsMultiple) {
-    return undefined;
+  // Только для method_code=16 (привязка карты) и method_code=49 (запись в БД)
+  if (config.code === 16 && config.supportsMultiple) {
+    return (items: Record<string, unknown>[]): unknown[] => {
+      return items
+        .filter(item => item.dt_cd && String(item.dt_cd).trim())
+        .map(item => ({
+          cd: String(item.dt_cd).trim(),
+          cl: Number(item.dt_cl) || 1,
+        }));
+    };
   }
 
-  return (items: Record<string, unknown>[]): unknown[] => {
-    return items
-      .filter(item => item.dt_cd && String(item.dt_cd).trim())
-      .map(item => ({
-        cd: String(item.dt_cd).trim(),
-        cl: Number(item.dt_cl) || 1,
-      }));
-  };
+  // Для method_code=49 (запись в БД) - используется buildDbWriteItem
+  if (config.code === 49 && config.dtFormat === 'dbWrite' && config.supportsMultiple) {
+    return (items: Record<string, unknown>[]): unknown[] => {
+      return items
+        .map(item => buildDbWriteItem(item))
+        .filter((item): item is DbWriteItem => item !== null);
+    };
+  }
+
+  return undefined;
 }
 
 /**
