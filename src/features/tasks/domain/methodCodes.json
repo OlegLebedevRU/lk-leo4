@@ -137,6 +137,24 @@
           "tooltip": "Значение параметра (v)"
         }
       ]
+    },
+    {
+      "code": 50,
+      "label": "50 - Получить данные из БД",
+      "description": "Получить данные из базы данных устройства",
+      "dropdownTooltip": "Получить данные из БД",
+      "dtFormat": "objectArray",
+      "objectField": "ns",
+      "dtFields": [
+        {
+          "fieldName": "dt_ns",
+          "label": "Раздел БД",
+          "type": "string",
+          "defaultValue": "",
+          "example": "cfg_eth",
+          "tooltip": "Имя раздела базы данных (ns)"
+        }
+      ]
     }
   ]
 }
