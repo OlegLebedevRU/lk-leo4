@@ -9,8 +9,9 @@ import methodCodesData from './methodCodes.json';
  * - numberArray: список чисел [1, 2, ...]
  * - empty: пустой массив
  * - dbWrite: запись данных в БД [{ns, k, t, v}, ...]
+ * - objectFields: один объект из нескольких полей dt_* [{field1: val1, field2: val2, ...}]
  */
-export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty' | 'dbWrite';
+export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty' | 'dbWrite' | 'objectFields';
 
 /**
  * Поддерживаемые типы данных для записи в БД
@@ -147,6 +148,12 @@ export interface MethodCodeFieldJson {
   group?: string;
   /** Опции для типа select */
   options?: Array<{ value: string; label: string }>;
+  /** Поле обязательно для заполнения */
+  required?: boolean;
+  /** Регулярное выражение для валидации */
+  validationRegex?: string;
+  /** Сообщение об ошибке при нарушении валидации */
+  validationMessage?: string;
 }
 
 /**
@@ -191,6 +198,12 @@ export interface MethodCodeField {
   group?: string;
   /** Опции для типа select */
   options?: Array<{ value: string; label: string }>;
+  /** Поле обязательно для заполнения */
+  required?: boolean;
+  /** Регулярное выражение для валидации */
+  validationRegex?: string;
+  /** Сообщение об ошибке при нарушении валидации */
+  validationMessage?: string;
 }
 
 /**
@@ -297,6 +310,22 @@ function createBuildDt(config: MethodCodeConfigJson): (values: Record<string, un
         // Одиночная запись
         const item = buildDbWriteItem(values);
         return item ? [item] : [];
+      }
+
+      case 'objectFields': {
+        // Для команды 512 (STM32_BIN_DOWNLOAD): строит один объект из всех полей dt_*
+        // Ключ в объекте = fieldName без префикса "dt_"
+        const obj: Record<string, unknown> = {};
+        for (const field of config.dtFields || []) {
+          const key = field.fieldName.replace(/^dt_/, '');
+          const value = values[field.fieldName];
+          // Пропускаем undefined/null; для строк — пропускаем пустые строки
+          const isEmpty = value === undefined || value === null || (typeof value === 'string' && value.trim() === '');
+          if (!isEmpty) {
+            obj[key] = value;
+          }
+        }
+        return Object.keys(obj).length > 0 ? [obj] : [];
       }
 
       default:

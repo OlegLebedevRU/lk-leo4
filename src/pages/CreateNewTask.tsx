@@ -410,6 +410,20 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                         );
                       }
                       if (field.type === 'string') {
+                        const rules = [];
+                        if (field.required) {
+                          rules.push({ required: true, message: `${field.label} обязательно` });
+                        }
+                        if (field.validationRegex) {
+                          const regex = new RegExp(field.validationRegex);
+                          const msg = field.validationMessage || `Значение не соответствует формату`;
+                          rules.push({
+                            validator: async (_: unknown, value: string | undefined) => {
+                              if (!value?.trim()) return;
+                              if (!regex.test(value.trim())) throw new Error(msg);
+                            },
+                          });
+                        }
                         return (
                           <ProFormText
                             key={field.fieldName}
@@ -417,6 +431,7 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
                             label={field.label}
                             tooltip={field.tooltip}
                             initialValue={field.defaultValue}
+                            rules={rules.length > 0 ? rules : undefined}
                             fieldProps={{
                               placeholder: field.example ? `Например: ${field.example}` : undefined,
                             }}

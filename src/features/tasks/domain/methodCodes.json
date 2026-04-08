@@ -155,6 +155,70 @@
           "tooltip": "Имя раздела базы данных (ns)"
         }
       ]
+    },
+    {
+      "code": 51,
+      "label": "51 - Открыть ячейку",
+      "description": "Дистанционное открытие замка / ячейки",
+      "dropdownTooltip": "Открыть ячейку (дистанционное открытие замка)",
+      "dtFormat": "objectArray",
+      "objectField": "cl",
+      "dtFields": [
+        {
+          "fieldName": "dt_cl",
+          "label": "Номер ячейки",
+          "type": "number",
+          "defaultValue": 1,
+          "example": 5,
+          "tooltip": "Номер ячейки / канала для открытия (cl)"
+        }
+      ]
+    },
+    {
+      "code": 411,
+      "label": "411 - Прошивка STM32 (MCU Update)",
+      "description": "Запуск задачи прошивки STM32F411 через I2C-бутлоадер. Предварительно загрузите образ через команду 512.",
+      "dropdownTooltip": "Запуск прошивки STM32 (MCU Update). Требует предварительной загрузки образа (512).",
+      "dtFormat": "empty"
+    },
+    {
+      "code": 512,
+      "label": "512 - Загрузка прошивки STM32 (BIN Download)",
+      "description": "Скачивает BIN-файл прошивки STM32 по HTTPS и сохраняет в NVS. Завершение через событие 52 (STM32_BIN_LOAD_RESULT).",
+      "dropdownTooltip": "Загрузка образа прошивки STM32 из сети (BIN Download)",
+      "dtFormat": "objectFields",
+      "dtFields": [
+        {
+          "fieldName": "dt_url",
+          "label": "URL прошивки",
+          "type": "string",
+          "defaultValue": "",
+          "example": "https://example.com/stm32_f411.bin",
+          "tooltip": "URL для скачивания (https://...)",
+          "required": true,
+          "validationRegex": "^https://",
+          "validationMessage": "URL должен начинаться с https://"
+        },
+        {
+          "fieldName": "dt_sha256",
+          "label": "SHA256",
+          "type": "string",
+          "defaultValue": "",
+          "example": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "tooltip": "Ожидаемый SHA256, ровно 64 hex символа",
+          "required": true,
+          "validationRegex": "^[0-9a-fA-F]{64}$",
+          "validationMessage": "SHA256 должен содержать ровно 64 hex символа (0-9, a-f)"
+        },
+        {
+          "fieldName": "dt_chunk_size",
+          "label": "Размер чанка",
+          "type": "number",
+          "defaultValue": 1024,
+          "example": 1024,
+          "tooltip": "Размер чанка при скачивании: 1024 или 2048 (по умолчанию 1024)"
+        }
+      ]
     }
   ]
 }
