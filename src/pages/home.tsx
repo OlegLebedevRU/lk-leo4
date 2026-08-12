@@ -5,12 +5,13 @@ import Devicelist from './DeviceList';
 import EventList from './EventsList';
 import DetailList from './TasksList';
 import TagList from './DeviceTags';
+import DeviceConsoleTab from '../features/devices/components/DeviceConsoleTab';
 import { useDeviceInfo } from '../hooks/useDevices';
 import type { DeviceApiResponse, DeviceId } from '../features/devices/types';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
-type TabKey = 'context' | 'tasks' | 'events' | 'tags';
+type TabKey = 'context' | 'tasks' | 'events' | 'tags' | 'console';
 
 type SelectedDevice = {
   deviceId: DeviceId;
@@ -22,6 +23,7 @@ const TAB_ITEMS = [
   { label: 'Команды/задачи', key: 'tasks' },
   { label: 'Журнал событий', key: 'events' },
   { label: 'Теги', key: 'tags' },
+  { label: 'Консоль', key: 'console' },
 ];
 
 const DEFAULT_DEVICE_ID: DeviceId = '0';
@@ -174,6 +176,9 @@ const Monitoring: React.FC = () => {
   );
 
   const renderTabContent = () => {
+    const deviceSn = deviceInfo?.[0]?.sn;
+    const deviceApp = deviceInfo?.[0]?.device_tags?.find((t) => t.tag === 'app')?.value;
+
     switch (activeTab) {
       case 'context':
         return (
@@ -201,6 +206,12 @@ const Monitoring: React.FC = () => {
         return (
           <div style={{ flex: 1 }}>
             <TagList device_id={selectedDevice.deviceId} />
+          </div>
+        );
+      case 'console':
+        return (
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <DeviceConsoleTab sn={deviceSn} app={deviceApp} />
           </div>
         );
       default:

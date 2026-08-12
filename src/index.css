@@ -250,6 +250,418 @@ tr.device-row-selected .ant-badge-status-dot {
 .device-context-card * {
   box-sizing: border-box;
 }
+
+/* ============================================
+   ДИАГНОСТИЧЕСКАЯ КОНСОЛЬ УСТРОЙСТВА
+   ============================================ */
+
+.device-console-tab {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 180px);
+  min-height: 360px;
+  gap: 8px;
+}
+
+.device-console-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.device-console-stats {
+  font-size: 12px;
+}
+
+/* ── Main area: sidebar + output ── */
+
+.device-console-main {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.device-console-tab--collapsed .device-console-main {
+  flex-direction: column;
+}
+
+/* ── Command panel (left sidebar) ── */
+
+.device-console-cmd-panel {
+  width: 240px;
+  min-width: 180px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  background: #0d1117;
+  overflow: hidden;
+}
+
+.device-console-cmd-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #21262d;
+  background: #161b22;
+}
+
+.device-console-cmd-title {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.device-console-cmd-collapse-btn.ant-btn {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  color: #484f58;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.device-console-cmd-panel:hover .device-console-cmd-collapse-btn.ant-btn {
+  opacity: 1;
+}
+
+.device-console-cmd-collapse-btn.ant-btn:hover {
+  color: #c9d1d9 !important;
+}
+
+/* Platform segmented */
+
+.device-console-cmd-platform {
+  padding: 6px 8px;
+  border-bottom: 1px solid #21262d;
+}
+
+.device-console-cmd-platform .ant-segmented {
+  background: #161b22;
+}
+
+.device-console-cmd-platform .ant-segmented-item {
+  color: #8b949e;
+  font-size: 11px;
+}
+
+.device-console-cmd-platform .ant-segmented-item-selected {
+  color: #e6edf3;
+  background: #30363d;
+}
+
+.device-console-cmd-platform .ant-segmented-thumb {
+  background: #30363d;
+}
+
+/* Command list */
+
+.device-console-cmd-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.device-console-cmd-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.device-console-cmd-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.device-console-cmd-list::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 2px;
+}
+
+.device-console-cmd-group {
+  margin-bottom: 2px;
+}
+
+.device-console-cmd-group-label {
+  padding: 6px 12px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #484f58;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  user-select: none;
+}
+
+/* Command item */
+
+.device-console-cmd-item {
+  position: relative;
+}
+
+.device-console-cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.device-console-cmd-row:hover {
+  background: #161b22;
+}
+
+.device-console-cmd-item--disabled .device-console-cmd-row {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.device-console-cmd-item--disabled .device-console-cmd-row:hover {
+  background: transparent;
+}
+
+.device-console-cmd-item--active .device-console-cmd-row {
+  background: rgba(56, 139, 253, 0.08);
+}
+
+.device-console-cmd-item--active .device-console-cmd-row:hover {
+  background: rgba(56, 139, 253, 0.12);
+}
+
+/* Status indicator dot */
+
+.device-console-cmd-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #30363d;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.device-console-cmd-item--active .device-console-cmd-indicator {
+  background: #388bfd;
+}
+
+.device-console-cmd-indicator--pulse {
+  animation: cmd-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cmd-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Command label */
+
+.device-console-cmd-label {
+  flex: 1;
+  font-size: 12px;
+  color: #c9d1d9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.device-console-cmd-item--active .device-console-cmd-label {
+  color: #58a6ff;
+}
+
+/* Platform dot */
+
+.device-console-cmd-platform-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.device-console-cmd-platform-dot--linux {
+  background: #3fb950;
+}
+
+.device-console-cmd-platform-dot--windows {
+  background: #58a6ff;
+}
+
+.device-console-cmd-platform-dot--esp32 {
+  background: #d29922;
+}
+
+/* Expand hint */
+
+.device-console-cmd-expand-hint {
+  font-size: 10px;
+  color: #484f58;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.device-console-cmd-row:hover .device-console-cmd-expand-hint {
+  color: #8b949e;
+}
+
+/* Stop button inside row */
+
+.device-console-cmd-stop-btn.ant-btn {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  color: #f85149;
+}
+
+.device-console-cmd-stop-btn.ant-btn:hover {
+  color: #ff7b72 !important;
+}
+
+/* Args form (inline) */
+
+.device-console-cmd-args {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 12px 8px 26px;
+  background: #0d1117;
+  border-top: 1px solid #21262d;
+  animation: args-slide-in 0.15s ease-out;
+}
+
+@keyframes args-slide-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.device-console-cmd-arg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.device-console-cmd-arg-label {
+  font-size: 10px;
+  color: #6e7681;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.device-console-cmd-arg-input {
+  font-size: 12px !important;
+}
+
+.device-console-cmd-arg-input .ant-input-number-input,
+.device-console-cmd-arg-input .ant-input {
+  padding: 2px 6px;
+  height: 26px;
+  font-size: 12px;
+  background: #161b22;
+  border-color: #30363d;
+  color: #c9d1d9;
+}
+
+.device-console-cmd-arg-input .ant-input-number-input:focus,
+.device-console-cmd-arg-input .ant-input:focus {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.15);
+}
+
+.device-console-cmd-run-btn.ant-btn {
+  margin-top: 2px;
+  height: 26px;
+  font-size: 11px;
+}
+
+/* ── Console output ── */
+
+.device-console-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #05070a;
+  color: #d1d5db;
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.device-console-line {
+  display: flex;
+  gap: 8px;
+  min-height: 17px;
+}
+
+.device-console-ts {
+  flex: 0 0 auto;
+  color: #6b7280;
+  user-select: none;
+}
+
+.device-console-text {
+  flex: 1 1 auto;
+}
+
+.device-console-line-log,
+.device-console-line-stdout {
+  color: #d1d5db;
+}
+
+.device-console-line-stderr,
+.device-console-line-error {
+  color: #ff7b72;
+}
+
+.device-console-line-status,
+.device-console-line-system {
+  color: #8ab4f8;
+}
+
+.device-console-line-result {
+  color: #7ee787;
+}
+
+.device-console-line-command {
+  color: #d2a8ff;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .device-console-tab {
+    height: calc(100vh - 220px);
+  }
+
+  .device-console-main {
+    flex-direction: column;
+  }
+
+  .device-console-cmd-panel {
+    width: 100%;
+    max-height: 200px;
+  }
+
+  .device-console-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .device-console-line {
+    flex-direction: column;
+    gap: 0;
+  }
+}
 /* 
 a {
   font-weight: 500;

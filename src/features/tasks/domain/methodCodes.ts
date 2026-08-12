@@ -10,8 +10,9 @@ import methodCodesData from './methodCodes.json';
  * - empty: пустой массив
  * - dbWrite: запись данных в БД [{ns, k, t, v}, ...]
  * - objectFields: один объект из нескольких полей dt_* [{field1: val1, field2: val2, ...}]
+ * - fullscreenJpeg: временное полноэкранное JPEG-изображение [{action, url?}]
  */
-export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty' | 'dbWrite' | 'objectFields';
+export type DtFormat = 'objectArray' | 'stringArray' | 'numberArray' | 'empty' | 'dbWrite' | 'objectFields' | 'fullscreenJpeg';
 
 /**
  * Поддерживаемые типы данных для записи в БД
@@ -326,6 +327,34 @@ function createBuildDt(config: MethodCodeConfigJson): (values: Record<string, un
           }
         }
         return Object.keys(obj).length > 0 ? [obj] : [];
+      }
+
+      case 'fullscreenJpeg': {
+        const action = String(values.dt_action ?? '').trim();
+
+        if (action === 'hide') {
+          return [{ action }];
+        }
+
+        if (action !== 'show') {
+          throw new Error('Действие должно быть show или hide');
+        }
+
+        const url = String(values.dt_url ?? '').trim();
+        if (!url) {
+          throw new Error('URL JPEG обязателен для действия show');
+        }
+
+        try {
+          const parsedUrl = new URL(url);
+          if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+            throw new Error();
+          }
+        } catch {
+          throw new Error('URL JPEG должен быть абсолютным HTTP(S) URL');
+        }
+
+        return [{ action, url }];
       }
 
       default:

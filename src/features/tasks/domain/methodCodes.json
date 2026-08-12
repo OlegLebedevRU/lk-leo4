@@ -219,6 +219,34 @@
           "tooltip": "Размер чанка при скачивании: 1024 или 2048 (по умолчанию 1024)"
         }
       ]
+    },
+    {
+      "code": 7010,
+      "label": "7010 - Полноэкранное JPEG-изображение",
+      "description": "Временно показывает или скрывает полноэкранное JPEG-изображение поверх интерфейса устройства.",
+      "dropdownTooltip": "Показать или скрыть полноэкранное JPEG-изображение",
+      "dtFormat": "fullscreenJpeg",
+      "dtFields": [
+        {
+          "fieldName": "dt_action",
+          "label": "Действие",
+          "type": "select",
+          "defaultValue": "show",
+          "tooltip": "show показывает изображение, hide скрывает его",
+          "options": [
+            { "value": "show", "label": "Показать" },
+            { "value": "hide", "label": "Скрыть" }
+          ]
+        },
+        {
+          "fieldName": "dt_url",
+          "label": "URL JPEG",
+          "type": "string",
+          "defaultValue": "",
+          "example": "https://example.org/media/screen-1280x800.jpg",
+          "tooltip": "Абсолютный HTTP(S) URL JPEG-изображения; требуется только для show"
+        }
+      ]
     }
   ]
 }

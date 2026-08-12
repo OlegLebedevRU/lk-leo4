@@ -77,6 +77,7 @@ export type NewDeviceTaskFormValues = {
   dt_url?: string;      // Для method_code=512: URL прошивки
   dt_sha256?: string;   // Для method_code=512: SHA256
   dt_chunk_size?: number; // Для method_code=512: размер чанка
+  dt_action?: 'show' | 'hide'; // Для method_code=7010: действие с полноэкранным JPEG
   // Для method_code=16 с множественными объектами
   dt_items?: Array<{ dt_cd: string; dt_cl: number }> | Array<{ dt_ns: string; dt_k: string; dt_t: string; dt_v: string }>;
 };

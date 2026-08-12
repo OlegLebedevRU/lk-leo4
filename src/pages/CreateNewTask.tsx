@@ -335,6 +335,65 @@ const NewTask: React.FC<DetailListProps> = ({ device_id }) => {
               );
               }
             }
+
+            if (config.dtFormat === 'fullscreenJpeg') {
+              const action = form.getFieldValue('dt_action') as 'show' | 'hide' | undefined;
+              const isShowAction = action !== 'hide';
+              const actionField = config.dtFields.find((field) => field.fieldName === 'dt_action');
+              const urlField = config.dtFields.find((field) => field.fieldName === 'dt_url');
+
+              return (
+                <>
+                  <ProFormSelect
+                    name="dt_action"
+                    label={actionField?.label}
+                    tooltip={actionField?.tooltip}
+                    initialValue={actionField?.defaultValue}
+                    options={actionField?.options || []}
+                    rules={[{ required: true, message: 'Выберите действие' }]}
+                    fieldProps={{
+                      onChange: (nextAction) => {
+                        if (nextAction === 'hide') {
+                          form.setFieldsValue({ dt_url: undefined });
+                        }
+                      },
+                    }}
+                  />
+                  {isShowAction && (
+                    <ProFormText
+                      name="dt_url"
+                      label={urlField?.label}
+                      tooltip={urlField?.tooltip}
+                      initialValue={urlField?.defaultValue}
+                      fieldProps={{
+                        placeholder: urlField?.example ? `Например: ${urlField.example}` : undefined,
+                      }}
+                      rules={[
+                        { required: true, message: 'URL JPEG обязателен для действия show' },
+                        {
+                          validator: async (_: unknown, value: string | undefined) => {
+                            if (!value?.trim()) return;
+                            try {
+                              const parsedUrl = new URL(value.trim());
+                              if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+                                throw new Error();
+                              }
+                            } catch {
+                              throw new Error('Введите абсолютный HTTP(S) URL JPEG-изображения');
+                            }
+                          },
+                        },
+                      ]}
+                    />
+                  )}
+                  {config.description && (
+                    <div style={{ marginBottom: 16, color: '#888', fontSize: 12 }}>
+                      {config.description}
+                    </div>
+                  )}
+                </>
+              );
+            }
             
             // Группировка полей по группам (например, для method_code=16)
             const groups = config.dtFields.reduce((acc, field) => {
