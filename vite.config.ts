@@ -10,7 +10,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 2100,
     rolldownOptions: {
       output: {
-        advancedChunks: {
+        codeSplitting: {
           groups: [
             { name: 'vendor-react', test: /[/\\]node_modules[/\\](react|react-dom|react-router)[/\\]/ },
             { name: 'vendor-antd', test: /[/\\]node_modules[/\\](@ant-design|antd)[/\\]/ },

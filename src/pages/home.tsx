@@ -136,7 +136,7 @@ const Monitoring: React.FC = () => {
         title="Сведения об устройстве:"
         className="device-context-card"
         style={{ width: '100%' }}
-        bodyStyle={{ overflow: 'hidden' }}
+        styles={{ body: { overflow: 'hidden' } }}
       >
         <ProDescriptions layout="vertical">
           <ProDescriptions.Item>
@@ -235,13 +235,15 @@ const Monitoring: React.FC = () => {
       </ProCard>
       <ProCard
         title={`Устройство: ${selectedDevice.deviceId}`}
-        bordered
+        variant="outlined"
         boxShadow
-        bodyStyle={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          overflow: 'hidden',
+        styles={{
+          body: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+          },
         }}
       >
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={TAB_ITEMS} />
