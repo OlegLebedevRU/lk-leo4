@@ -8,19 +8,18 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     chunkSizeWarningLimit: 2100,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router'],
-          'vendor-antd': ['antd', '@ant-design/icons', '@ant-design/pro-components', '@ant-design/pro-provider'],
-          'vendor-utils': ['axios', 'react-syntax-highlighter'],
+        advancedChunks: {
+          groups: [
+            { name: 'vendor-react', test: /[/\\]node_modules[/\\](react|react-dom|react-router)[/\\]/ },
+            { name: 'vendor-antd', test: /[/\\]node_modules[/\\](@ant-design|antd)[/\\]/ },
+            { name: 'vendor-utils', test: /[/\\]node_modules[/\\](axios|react-syntax-highlighter)[/\\]/ },
+          ],
         },
       },
     },
-    minify: 'esbuild',
-  },
-  esbuild: {
-    drop: ['console', 'debugger'],
+    minify: 'oxc',
   },
   plugins: [react()],
   publicDir: 'public',

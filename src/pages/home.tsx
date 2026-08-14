@@ -225,7 +225,7 @@ const Monitoring: React.FC = () => {
       className="monitoring-card"
       style={{ minHeight: 'calc(100vh - 40px)' }}
     >
-      <ProCard colSpan="50%" className="device-list-card">
+      <ProCard colSpan={activeTab === 'console' ? '30%' : '50%'} className="device-list-card">
         <Devicelist
           onChange={handleDeviceChange}
           onRefresh={() => refetch?.()}
