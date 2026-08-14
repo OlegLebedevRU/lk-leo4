@@ -136,7 +136,7 @@ const Monitoring: React.FC = () => {
         title="Сведения об устройстве:"
         className="device-context-card"
         style={{ width: '100%' }}
-        bodyStyle={{ overflow: 'hidden' }}
+        styles={{ body: { overflow: 'hidden' } }}
       >
         <ProDescriptions layout="vertical">
           <ProDescriptions.Item>
@@ -225,7 +225,7 @@ const Monitoring: React.FC = () => {
       className="monitoring-card"
       style={{ minHeight: 'calc(100vh - 40px)' }}
     >
-      <ProCard colSpan="50%" className="device-list-card">
+      <ProCard colSpan={activeTab === 'console' ? '30%' : '50%'} className="device-list-card">
         <Devicelist
           onChange={handleDeviceChange}
           onRefresh={() => refetch?.()}
@@ -235,13 +235,15 @@ const Monitoring: React.FC = () => {
       </ProCard>
       <ProCard
         title={`Устройство: ${selectedDevice.deviceId}`}
-        bordered
+        variant="outlined"
         boxShadow
-        bodyStyle={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          overflow: 'hidden',
+        styles={{
+          body: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+          },
         }}
       >
         <Tabs activeKey={activeTab} onChange={handleTabChange} items={TAB_ITEMS} />
